@@ -1,6 +1,6 @@
-# NOD Care — Back Office Admin
+# NOD Care — Ops Console
 
-Web dashboard for platform operators (`root` / `support`).
+Web dashboard for platform operators (`root` / `admin` / `support` / `finance`).
 
 ## Stack
 
@@ -31,9 +31,11 @@ Ensure the API `CORS_ORIGINS` includes this origin.
 
 ## Screens
 
-- Dashboard / Analytics
-- Users
-- Onboarding
-- Catalog
-- CMS (carousel + feature tabs)
-- Settings
+- Dashboard
+- Doctors / Diagnostic Centres / Service Providers
+- Bookings (detail drawer, CSV export)
+- Patients (masked phone numbers)
+- Reports & Sales
+- Team & Roles
+- Settings (company profile + commissions)
+- CMS (from Settings)

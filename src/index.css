@@ -1,17 +1,24 @@
 @import 'tailwindcss';
 
 :root {
-  --brand: #135246;
-  --brand-dark: #0e3d35;
-  --brand-soft: #e8f3f0;
-  --surface: #f5f7f6;
-  --ink: #14201d;
-  --muted: #5c6b66;
-  --line: #d7e0dc;
-  --danger: #b42318;
-  font-family: 'Segoe UI', 'Avenir Next', 'Helvetica Neue', sans-serif;
+  --brand: #0e7a81;
+  --brand-dark: #0a5f65;
+  --brand-soft: #e6f4f4;
+  --sidebar: #1a2a2f;
+  --sidebar-muted: #8fa3a8;
+  --surface: #f4f6f8;
+  --ink: #1a2a2f;
+  --muted: #6b7280;
+  --line: #e8edf0;
+  --danger: #e11d48;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --info: #175cd3;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.08);
+  font-family: Inter, system-ui, sans-serif;
   color: var(--ink);
   background: var(--surface);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 * {
@@ -22,6 +29,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--surface);
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -38,4 +46,24 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+.location-picker .leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}
+
+.nod-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.nod-map-pin-dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #0e7a81;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }

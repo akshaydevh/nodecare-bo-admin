@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { BrandLockup } from '../components/icons';
 import { Button, Card, ErrorText, Input } from '../components/ui';
 
 export function ChangePasswordPage() {
@@ -32,7 +33,8 @@ export function ChangePasswordPage() {
   return (
     <div className="min-h-screen grid place-items-center bg-[var(--surface)] px-4">
       <Card className="w-full max-w-md">
-        <h1 className="text-2xl font-semibold">Change password</h1>
+        <BrandLockup />
+        <h1 className="text-2xl font-semibold mt-6">Change password</h1>
         <p className="text-sm text-[var(--muted)] mt-2">
           You must set a new password before using the dashboard.
         </p>

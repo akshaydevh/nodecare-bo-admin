@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { BrandLockup } from '../components/icons';
 import { Button, Card, ErrorText, Input } from '../components/ui';
 
 export function LoginPage() {
@@ -33,10 +34,10 @@ export function LoginPage() {
     <div className="min-h-screen grid place-items-center bg-[linear-gradient(160deg,#e8f3f0_0%,#f5f7f6_45%,#ffffff_100%)] px-4">
       <Card className="w-full max-w-md">
         <div className="mb-6">
-          <div className="text-xs uppercase tracking-[0.18em] text-[var(--brand)]">NOD Care</div>
-          <h1 className="text-2xl font-semibold mt-2">Back-office login</h1>
+          <BrandLockup />
+          <h1 className="text-2xl font-semibold mt-6">Login</h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            Use your root or support credentials.
+            Manage data, Analyze reports, and more.
           </p>
         </div>
         <form className="space-y-3" onSubmit={onSubmit}>

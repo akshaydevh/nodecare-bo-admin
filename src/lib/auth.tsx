@@ -2,14 +2,17 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   apiRequest,
   clearStoredTokens,
   getStoredUser,
+  setOnAuthExpired,
   setStoredTokens,
   setStoredUser,
   type AdminUser,
@@ -26,7 +29,16 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AdminUser | null>(() => getStoredUser());
+
+  useEffect(() => {
+    setOnAuthExpired(() => {
+      setUser(null);
+      queryClient.clear();
+    });
+    return () => setOnAuthExpired(null);
+  }, [queryClient]);
 
   const login = useCallback(async (loginId: string, password: string) => {
     const data = await apiRequest<{
@@ -74,7 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     clearStoredTokens();
     setUser(null);
-  }, []);
+    queryClient.clear();
+  }, [queryClient]);
 
   const refreshMe = useCallback(async () => {
     try {
