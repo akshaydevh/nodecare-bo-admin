@@ -22,11 +22,11 @@ function Icon({ children, className = 'size-4', ...props }: IconProps) {
 
 export function BrandMark({ className = 'size-9' }: { className?: string }) {
   return (
-    <span className={`grid place-items-center rounded-[10px] bg-[#1a9b94] ${className}`}>
-      <svg viewBox="0 0 24 24" className="size-[58%]" fill="white" aria-hidden>
-        <path d="M12 20.75s-6.85-4.2-9.35-8.7C.5 8.7 1.95 5.05 5.45 4.4c1.95-.36 3.7.6 4.55 2.25C10.85 5 12.6 4.04 14.55 4.4c3.5.65 4.95 4.3 2.8 7.65-2.5 4.5-9.35 8.7-9.35 8.7z" />
-      </svg>
-    </span>
+    <img
+      src="/logo.png"
+      alt="NOD Care"
+      className={`rounded-[10px] bg-white object-contain ${className}`}
+    />
   );
 }
 
