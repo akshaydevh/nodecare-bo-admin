@@ -62,8 +62,20 @@ const nav: {
     ],
   },
   {
+    label: 'App Configuration',
+    items: [
+      { to: '/app-config/home', label: 'Home Content', icon: <IconApps className="size-4" /> },
+      { to: '/app-config/discovery', label: 'Discovery', icon: <IconSearch className="size-4" /> },
+      { to: '/app-config/diagnostics', label: 'Diagnostics', icon: <IconLab className="size-4" /> },
+      { to: '/app-config/pharmacy', label: 'Pharmacy', icon: <IconBuilding className="size-4" /> },
+      { to: '/app-config/testimonials', label: 'Testimonials', icon: <IconUsers className="size-4" /> },
+      { to: '/app-config/support', label: 'Patient Support', icon: <IconBell className="size-4" /> },
+    ],
+  },
+  {
     label: 'Administration',
     items: [
+      { to: '/onboarding', label: 'Provider Access', icon: <IconShield className="size-4" /> },
       { to: '/team', label: 'Team & Roles', icon: <IconShield className="size-4" /> },
       { to: '/settings', label: 'Settings', icon: <IconSettings className="size-4" /> },
     ],

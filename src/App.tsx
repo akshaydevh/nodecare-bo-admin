@@ -6,16 +6,24 @@ import { BookingsPage } from './pages/BookingsPage';
 import { CentresPage } from './pages/CentresPage';
 import { MedicalCentresPage } from './pages/MedicalCentresPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
-import { CmsPage } from './pages/CmsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DoctorsPage } from './pages/DoctorsPage';
 import { LoginPage } from './pages/LoginPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { PatientsPage } from './pages/PatientsPage';
 import { ProvidersPage } from './pages/ProvidersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TeamPage } from './pages/TeamPage';
+import {
+  DiagnosticsConfigPage,
+  DiscoveryConfigPage,
+  PharmacyConfigPage,
+  TestimonialsConfigPage,
+} from './pages/app-config/CatalogConfigPages';
+import { HomeContentPage } from './pages/app-config/HomeContentPage';
+import { SupportConfigPage } from './pages/app-config/SupportConfigPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,9 +56,17 @@ export default function App() {
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
+                <Route path="reports/analytics" element={<ReportsPage />} />
+                <Route path="app-config/home" element={<HomeContentPage />} />
+                <Route path="app-config/discovery" element={<DiscoveryConfigPage />} />
+                <Route path="app-config/diagnostics" element={<DiagnosticsConfigPage />} />
+                <Route path="app-config/pharmacy" element={<PharmacyConfigPage />} />
+                <Route path="app-config/testimonials" element={<TestimonialsConfigPage />} />
+                <Route path="app-config/support" element={<SupportConfigPage />} />
+                <Route path="onboarding" element={<OnboardingPage />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="settings" element={<SettingsPage />} />
-                <Route path="cms" element={<CmsPage />} />
+                <Route path="cms" element={<Navigate to="/app-config/home" replace />} />
                 <Route path="search" element={<SearchPage />} />
               </Route>
             </Route>

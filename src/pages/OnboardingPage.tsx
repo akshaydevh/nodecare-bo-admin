@@ -53,8 +53,8 @@ export function OnboardingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Onboarding"
-        subtitle="Create a provider account and bind it to a catalog entity."
+        title="Provider Access"
+        subtitle="Invite and link provider identities; verify access, suspend, or reactivate."
       />
       <Card>
         <form className="grid md:grid-cols-2 gap-3" onSubmit={onSubmit}>

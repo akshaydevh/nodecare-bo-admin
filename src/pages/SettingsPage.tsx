@@ -177,8 +177,8 @@ export function SettingsPage() {
       </div>
       <p className="text-sm text-[var(--muted)] mt-6">
         Signed in as <strong>{user?.username || user?.email}</strong> ({user?.role}).{' '}
-        <Link to="/cms" className="text-[var(--brand)]">
-          Manage CMS
+        <Link to="/app-config/home" className="text-[var(--brand)]">
+          Home Content
         </Link>
       </p>
     </div>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
 import { formatInr, formatInrCompact, signedPct } from '../lib/format';
 import { Button, Card, KpiCard, PageHeader, Select, Table } from '../components/ui';
@@ -14,6 +15,13 @@ type Sales = {
   stacked: { month: string; doctor: number; diagnostics: number; pharmacy: number; ambulance: number; caretaker: number }[];
   share: { service: string; total: number }[];
   topDoctors: { id: string | null; name: string; bookings: number; revenue: number }[];
+};
+
+type Overview = {
+  appointmentsByStatus: Record<string, number>;
+  labBookingsByStatus: Record<string, number>;
+  pharmacyOrdersByStatus: Record<string, number>;
+  ambulanceByStatus: Record<string, number>;
 };
 
 const COLORS: Record<string, string> = {
@@ -78,11 +86,39 @@ function Donut({ slices }: { slices: { service: string; total: number }[] }) {
   );
 }
 
+function StatusCard({ title, data }: { title: string; data?: Record<string, number> }) {
+  return (
+    <Card>
+      <div className="text-sm font-medium mb-3">{title}</div>
+      <div className="space-y-1 text-sm">
+        {Object.entries(data ?? {}).map(([k, v]) => (
+          <div key={k} className="flex justify-between border-b border-[var(--line)] py-1">
+            <span>{k}</span>
+            <span className="font-medium">{v}</span>
+          </div>
+        ))}
+        {!data || Object.keys(data).length === 0 ? (
+          <div className="text-[var(--muted)]">No data</div>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
+
 export function ReportsPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tab = location.pathname.includes('/analytics') ? 'analytics' : 'overview';
   const [range, setRange] = useState<'3m' | '6m' | '12m'>('6m');
   const { data, isLoading } = useQuery({
     queryKey: ['sales-report', range],
     queryFn: () => apiRequest<Sales>(`/admin/reports/sales?range=${range}`),
+    enabled: tab === 'overview',
+  });
+  const analytics = useQuery({
+    queryKey: ['analytics-detail'],
+    queryFn: () => apiRequest<Overview>('/admin/analytics/overview'),
+    enabled: tab === 'analytics',
   });
   const generate = useMutation({
     mutationFn: () =>
@@ -99,71 +135,110 @@ export function ReportsPage() {
         title="Reports & Sales"
         subtitle="Track revenue, commissions and performance across the whole network."
         action={
-          <div className="flex gap-2">
-            <Select value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="w-[160px]">
-              <option value="3m">Last 3 months</option>
-              <option value="6m">Last 6 months</option>
-              <option value="12m">Last 12 months</option>
-            </Select>
-            <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
-              Generate report
-            </Button>
-          </div>
+          tab === 'overview' ? (
+            <div className="flex gap-2">
+              <Select value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="w-[160px]">
+                <option value="3m">Last 3 months</option>
+                <option value="6m">Last 6 months</option>
+                <option value="12m">Last 12 months</option>
+              </Select>
+              <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
+                Generate report
+              </Button>
+            </div>
+          ) : undefined
         }
       />
-      {isLoading ? <p className="text-sm text-[var(--muted)]">Loading…</p> : null}
-      {data ? (
+
+      <div className="flex gap-2 border-b border-[var(--line)]">
+        {(
+          [
+            ['overview', '/reports', 'Overview'],
+            ['analytics', '/reports/analytics', 'Analytics'],
+          ] as const
+        ).map(([id, path, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => navigate(path)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+              tab === id
+                ? 'border-[var(--brand)] text-[var(--brand)]'
+                : 'border-transparent text-[var(--muted)]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              label="Total revenue"
-              value={formatInrCompact(data.kpis.totalRevenue.value)}
-              hint={signedPct(data.kpis.totalRevenue.changePct)}
-              tone={data.kpis.totalRevenue.changePct >= 0 ? 'up' : 'down'}
-            />
-            <KpiCard
-              label="Commission earned"
-              value={formatInrCompact(data.kpis.commissionEarned.value)}
-              hint={signedPct(data.kpis.commissionEarned.changePct)}
-              tone="up"
-            />
-            <KpiCard
-              label="Refunds issued"
-              value={formatInrCompact(data.kpis.refundsIssued.value)}
-              hint={signedPct(data.kpis.refundsIssued.changePct)}
-              tone="down"
-            />
-            <KpiCard
-              label="Net provider payout"
-              value={formatInrCompact(data.kpis.netProviderPayout.value)}
-              hint={signedPct(data.kpis.netProviderPayout.changePct)}
-              tone="up"
-            />
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Card>
-              <div className="font-medium mb-4">Revenue by service line</div>
-              <StackedBars rows={data.stacked} />
-            </Card>
-            <Card>
-              <div className="font-medium mb-4">Revenue share</div>
-              <Donut slices={data.share} />
-            </Card>
-          </div>
-          <div>
-            <div className="font-medium mb-3">Top performing doctors</div>
-            <Table headers={['Doctor', 'Bookings', 'Revenue']}>
-              {data.topDoctors.map((d) => (
-                <tr key={d.id ?? d.name}>
-                  <td className="px-4 py-3">{d.name}</td>
-                  <td className="px-4 py-3">{d.bookings}</td>
-                  <td className="px-4 py-3">{formatInr(d.revenue)}</td>
-                </tr>
-              ))}
-            </Table>
+          {isLoading ? <p className="text-sm text-[var(--muted)]">Loading…</p> : null}
+          {data ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <KpiCard
+                  label="Total revenue"
+                  value={formatInrCompact(data.kpis.totalRevenue.value)}
+                  hint={signedPct(data.kpis.totalRevenue.changePct)}
+                  tone={data.kpis.totalRevenue.changePct >= 0 ? 'up' : 'down'}
+                />
+                <KpiCard
+                  label="Commission earned"
+                  value={formatInrCompact(data.kpis.commissionEarned.value)}
+                  hint={signedPct(data.kpis.commissionEarned.changePct)}
+                  tone="up"
+                />
+                <KpiCard
+                  label="Refunds issued"
+                  value={formatInrCompact(data.kpis.refundsIssued.value)}
+                  hint={signedPct(data.kpis.refundsIssued.changePct)}
+                  tone="down"
+                />
+                <KpiCard
+                  label="Net provider payout"
+                  value={formatInrCompact(data.kpis.netProviderPayout.value)}
+                  hint={signedPct(data.kpis.netProviderPayout.changePct)}
+                  tone="up"
+                />
+              </div>
+              <div className="grid gap-4 xl:grid-cols-2">
+                <Card>
+                  <div className="font-medium mb-4">Revenue by service line</div>
+                  <StackedBars rows={data.stacked} />
+                </Card>
+                <Card>
+                  <div className="font-medium mb-4">Revenue share</div>
+                  <Donut slices={data.share} />
+                </Card>
+              </div>
+              <div>
+                <div className="font-medium mb-3">Top performing doctors</div>
+                <Table headers={['Doctor', 'Bookings', 'Revenue']}>
+                  {data.topDoctors.map((d) => (
+                    <tr key={d.id ?? d.name}>
+                      <td className="px-4 py-3">{d.name}</td>
+                      <td className="px-4 py-3">{d.bookings}</td>
+                      <td className="px-4 py-3">{formatInr(d.revenue)}</td>
+                    </tr>
+                  ))}
+                </Table>
+              </div>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {analytics.isLoading ? <p className="text-sm text-[var(--muted)]">Loading…</p> : null}
+          <div className="grid gap-4 md:grid-cols-2">
+            <StatusCard title="Appointments" data={analytics.data?.appointmentsByStatus} />
+            <StatusCard title="Lab bookings" data={analytics.data?.labBookingsByStatus} />
+            <StatusCard title="Pharmacy orders" data={analytics.data?.pharmacyOrdersByStatus} />
+            <StatusCard title="Ambulance" data={analytics.data?.ambulanceByStatus} />
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 }
