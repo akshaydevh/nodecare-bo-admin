@@ -9,6 +9,7 @@ type Row = {
   role: string;
   providerEntityType: string;
   providerEntityId: string;
+  entityName?: string | null;
   user: { name?: string | null; phone: string } | null;
   createdAt?: string;
 };
@@ -122,9 +123,14 @@ export function OnboardingPage() {
       ),
   });
 
+  const allCandidates = candidates.data?.items ?? [];
   const options = useMemo(
-    () => (candidates.data?.items ?? []).filter((item) => !item.alreadyLinked),
-    [candidates.data],
+    () => allCandidates.filter((item) => !item.alreadyLinked),
+    [allCandidates],
+  );
+  const alreadyGranted = useMemo(
+    () => allCandidates.filter((item) => item.alreadyLinked),
+    [allCandidates],
   );
 
   const create = useMutation({
@@ -217,31 +223,48 @@ export function OnboardingPage() {
                 <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-[var(--line)] bg-white shadow-[var(--shadow)]">
                   {candidates.isFetching ? (
                     <div className="px-3 py-2 text-sm text-[var(--muted)]">Searching…</div>
-                  ) : options.length === 0 ? (
+                  ) : options.length === 0 && alreadyGranted.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-[var(--muted)]">
                       No unmatched profiles. Create the catalog record first.
                     </div>
                   ) : (
-                    options.map((item) => (
-                      <button
-                        key={`${item.kind}-${item.id}`}
-                        type="button"
-                        className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-[var(--brand-soft)]"
-                        onClick={() => {
-                          setSelected(item);
-                          setNameQuery(item.name);
-                          setOpen(false);
-                          setError('');
-                        }}
-                      >
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-xs text-[var(--muted)]">
-                          {item.kind}
-                          {item.phone ? ` · ${item.phone}` : ' · no phone'}
-                          {item.city ? ` · ${item.city}` : ''}
-                        </span>
-                      </button>
-                    ))
+                    <>
+                      {options.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-[var(--muted)]">
+                          All matching profiles already have access.
+                        </div>
+                      ) : (
+                        options.map((item) => (
+                          <button
+                            key={`${item.kind}-${item.id}`}
+                            type="button"
+                            className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-[var(--brand-soft)]"
+                            onClick={() => {
+                              setSelected(item);
+                              setNameQuery(item.name);
+                              setOpen(false);
+                              setError('');
+                            }}
+                          >
+                            <span className="font-medium">{item.name}</span>
+                            <span className="text-xs text-[var(--muted)]">
+                              {item.kind}
+                              {item.phone ? ` · ${item.phone}` : ' · no phone'}
+                              {item.city ? ` · ${item.city}` : ''}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                      {alreadyGranted.map((item) => (
+                        <div
+                          key={`linked-${item.kind}-${item.id}`}
+                          className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm text-[var(--muted)]"
+                        >
+                          <span className="font-medium">{item.name}</span>
+                          <span className="text-xs">Already has access</span>
+                        </div>
+                      ))}
+                    </>
                   )}
                 </div>
               ) : null}
@@ -316,7 +339,7 @@ export function OnboardingPage() {
         ) : (
           rows.map((row) => (
             <tr key={row.id}>
-              <td className="px-4 py-3">{row.user?.name || '—'}</td>
+              <td className="px-4 py-3">{row.entityName || row.user?.name || '—'}</td>
               <td className="px-4 py-3">{row.user?.phone || '—'}</td>
               <td className="px-4 py-3">{ROLE_LABEL[row.role] ?? row.role}</td>
               <td className="px-4 py-3">{TYPE_LABEL[row.providerEntityType] ?? row.providerEntityType}</td>
