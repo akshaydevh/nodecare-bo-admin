@@ -90,6 +90,7 @@ type CaretakerDetail = {
   initials: string;
   slug: string;
   photoUrl: string | null;
+  phone: string | null;
   gender: 'male' | 'female' | 'other' | null;
   qualifications: string[];
   experienceYears: number;
@@ -299,7 +300,7 @@ function toCaretakerForm(d: CaretakerDetail): CaretakerForm {
   const { lat, lng } = coords(d.location);
   return {
     name: d.name,
-    phone: '',
+    phone: d.phone ?? '',
     email: '',
     city: d.city,
     slug: d.slug,
@@ -1096,6 +1097,7 @@ export function ProvidersPage() {
               {type === 'caretaker' ? (
                 <>
                   <Field label="Slug" value={(provider as CaretakerDetail).slug} />
+                  <Field label="Phone" value={(provider as CaretakerDetail).phone} />
                   <Field label="User ID" value={(provider as CaretakerDetail).userId} />
                   <Field label="Gender" value={(provider as CaretakerDetail).gender} />
                   <Field label="City" value={(provider as CaretakerDetail).city} />
@@ -1327,6 +1329,13 @@ export function ProvidersPage() {
                   <Input
                     value={editCaretaker.slug}
                     onChange={(e) => setEditCaretaker({ ...editCaretaker, slug: e.target.value })}
+                    required
+                  />
+                </FormField>
+                <FormField label="Phone">
+                  <Input
+                    value={editCaretaker.phone}
+                    onChange={(e) => setEditCaretaker({ ...editCaretaker, phone: e.target.value })}
                     required
                   />
                 </FormField>

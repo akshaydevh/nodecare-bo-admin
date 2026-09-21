@@ -176,7 +176,9 @@ export function HomeContentPage() {
         ...(pendingImage
           ? { imageUrl: pendingImage.publicUrl, imageKey: pendingImage.key }
           : {}),
-        sortOrder: 0,
+        ...(!editSlideId
+          ? { sortOrder: Math.max(-1, ...(slides.data ?? []).map((slide) => slide.sortOrder)) + 1 }
+          : {}),
       };
       if (editSlideId) {
         return apiRequest(`/admin/cms/carousel/${editSlideId}`, {
@@ -362,7 +364,7 @@ export function HomeContentPage() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'carousel', label: 'Carousel' },
+    { id: 'carousel', label: 'top-rated-curosel' },
     { id: 'shortcuts', label: 'Service Shortcuts' },
     { id: 'featured', label: 'Featured Cards' },
   ];
@@ -371,7 +373,7 @@ export function HomeContentPage() {
     <div className="space-y-6">
       <PageHeader
         title="Home Content"
-        subtitle="Carousel, service shortcuts, and featured cards published to the patient home."
+        subtitle="top-rated-curosel, service shortcuts, and featured cards published to the patient home."
       />
       <p className="text-sm text-[var(--muted)]">
         Changes may take up to a few minutes to appear on patient devices after cache expiry.
@@ -415,22 +417,29 @@ export function HomeContentPage() {
 
       {tab === 'carousel' ? (
         <div className="space-y-4">
+          <p className="text-sm text-[var(--muted)]">
+            Upload the complete banner artwork for the area below the home search bar,
+            including any text and photos. Each image is one slide in top-rated-curosel.
+            Use 1200 × 630 px artwork; the app displays the image as supplied.
+            Slides are managed here independently of the doctor list. With no live slides,
+            this area is hidden.
+          </p>
           <Card>
             <form className="space-y-3" onSubmit={onSlideSubmit}>
               <div className="grid md:grid-cols-2 gap-3">
                 <Input
-                  placeholder="Title"
+                  placeholder="Slide name (for admin and accessibility)"
                   value={slideForm.title}
                   onChange={(e) => setSlideForm((s) => ({ ...s, title: e.target.value }))}
                   required
                 />
                 <Input
-                  placeholder="Subtitle"
+                  placeholder="Optional description (not displayed over the banner)"
                   value={slideForm.subtitle}
                   onChange={(e) => setSlideForm((s) => ({ ...s, subtitle: e.target.value }))}
                 />
                 <Input
-                  placeholder="Alt text"
+                  placeholder="Accessible description of the complete banner"
                   value={slideForm.altText}
                   onChange={(e) => setSlideForm((s) => ({ ...s, altText: e.target.value }))}
                 />

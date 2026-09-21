@@ -15,7 +15,7 @@ export type CropPreset = {
 };
 
 export const CMS_CROP_PRESETS: Record<string, CropPreset> = {
-  carousel: { label: 'Carousel 1.91:1', aspect: 1.91, outWidth: 1200, outHeight: 630 },
+  carousel: { label: 'top-rated-curosel 1.91:1', aspect: 1.91, outWidth: 1200, outHeight: 630 },
   featured_card: { label: 'Featured 3:4', aspect: 3 / 4, outWidth: 720, outHeight: 960 },
   service_shortcut: { label: 'Shortcut 1:1', aspect: 1, outWidth: 600, outHeight: 600 },
   service_shortcut_wide: { label: 'Wide 2:1', aspect: 2, outWidth: 1200, outHeight: 600 },

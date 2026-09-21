@@ -21,6 +21,7 @@ import {
 type Doctor = {
   id: string;
   name: string;
+  phone?: string | null;
   initials: string;
   photoUrl: string | null;
   qualifications: string[];
@@ -40,6 +41,7 @@ type DoctorDetail = {
   id: string;
   userId: string | null;
   name: string;
+  phone?: string | null;
   slug: string;
   photoUrl: string | null;
   gender: 'male' | 'female' | 'other' | null;
@@ -155,6 +157,7 @@ function initialsFromName(name: string) {
 function profilePayload(values: DoctorProfileForm) {
   return {
     name: values.name,
+    phone: values.phone || undefined,
     slug: values.slug || undefined,
     photoUrl: values.photoUrl.startsWith('http') ? values.photoUrl : undefined,
     gender: values.gender || undefined,
@@ -503,6 +506,7 @@ function toEditForm(d: DoctorDetail): EditForm {
   const [lng, lat] = d.location?.coordinates ?? [];
   return {
     name: d.name,
+    phone: d.phone ?? '',
     slug: d.slug,
     photoUrl: d.photoUrl ?? '',
     gender: d.gender ?? '',
@@ -910,6 +914,7 @@ export function DoctorsPage() {
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <Field label="Slug" value={doctor.slug} />
+              <Field label="Phone" value={doctor.phone} />
               <Field label="User ID" value={doctor.userId} />
               <Field label="Gender" value={doctor.gender} />
               <Field label="City" value={doctor.city} />
@@ -993,6 +998,7 @@ export function DoctorsPage() {
               onChange={(patch) => setEdit((current) => (current ? { ...current, ...patch } : current))}
               catalog={options.data}
               initials={doctor.initials}
+              showPhone
               showSlug
               fileRef={fileRef}
               onPickPhoto={(e) => onPickPhoto('edit', e)}
