@@ -205,6 +205,30 @@ function DoctorFormFields({
   fileRef: RefObject<HTMLInputElement | null>;
   onPickPhoto: (e: ChangeEvent<HTMLInputElement>) => void;
 }) {
+  const selectedFacilities = [
+    ...(catalog?.clinics ?? [])
+      .filter((item) => values.clinicIds.includes(item.id))
+      .map((item) => ({ ...item, kind: 'clinic' as const })),
+    ...(catalog?.hospitals ?? [])
+      .filter((item) => values.hospitalIds.includes(item.id))
+      .map((item) => ({ ...item, kind: 'hospital' as const })),
+  ];
+  const primaryId =
+    selectedFacilities.find((item) => item.name === values.primaryFacilityName)?.id ?? '';
+
+  function patchFacilities(patch: { clinicIds?: string[]; hospitalIds?: string[] }) {
+    const clinicIds = patch.clinicIds ?? values.clinicIds;
+    const hospitalIds = patch.hospitalIds ?? values.hospitalIds;
+    const allowed = new Set([
+      ...(catalog?.clinics ?? []).filter((item) => clinicIds.includes(item.id)).map((item) => item.name),
+      ...(catalog?.hospitals ?? []).filter((item) => hospitalIds.includes(item.id)).map((item) => item.name),
+    ]);
+    onChange({
+      ...patch,
+      ...(allowed.has(values.primaryFacilityName) ? {} : { primaryFacilityName: '' }),
+    });
+  }
+
   return (
     <>
       <div className="flex items-center gap-4">
@@ -317,17 +341,11 @@ function DoctorFormFields({
           onChange={(e) => onChange({ languages: e.target.value })}
         />
       </FormField>
-      <FormField label="Primary clinic / hospital">
-        <Input
-          value={values.primaryFacilityName}
-          onChange={(e) => onChange({ primaryFacilityName: e.target.value })}
-        />
-      </FormField>
       <FormField label="Clinics">
         <MultiSelect
           options={catalog?.clinics ?? []}
           value={values.clinicIds}
-          onChange={(clinicIds) => onChange({ clinicIds })}
+          onChange={(clinicIds) => patchFacilities({ clinicIds })}
           placeholder="Select a clinic"
         />
       </FormField>
@@ -335,9 +353,30 @@ function DoctorFormFields({
         <MultiSelect
           options={catalog?.hospitals ?? []}
           value={values.hospitalIds}
-          onChange={(hospitalIds) => onChange({ hospitalIds })}
+          onChange={(hospitalIds) => patchFacilities({ hospitalIds })}
           placeholder="Select a hospital"
         />
+      </FormField>
+      <FormField label="Primary clinic / hospital">
+        <Select
+          value={primaryId}
+          disabled={selectedFacilities.length === 0}
+          onChange={(e) => {
+            const option = selectedFacilities.find((item) => item.id === e.target.value);
+            onChange({ primaryFacilityName: option?.name ?? '' });
+          }}
+        >
+          <option value="">
+            {selectedFacilities.length
+              ? 'Select a primary clinic or hospital'
+              : 'Select a clinic or hospital first'}
+          </option>
+          {selectedFacilities.map((item) => (
+            <option key={`${item.kind}-${item.id}`} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </Select>
       </FormField>
       <FormField label="City">
         <Input value={values.city} onChange={(e) => onChange({ city: e.target.value })} required />
@@ -924,9 +963,9 @@ export function DoctorsPage() {
               <Field label="Experience" value={`${doctor.experienceYears} yrs`} />
               <Field label="Consultation fee" value={formatInr(doctor.consultationFee)} />
               <Field label="Languages" value={doctor.languages.join(', ')} />
-              <Field label="Primary facility" value={doctor.primaryFacilityName} />
               <Field label="Clinics" value={doctor.clinicNames.join(', ')} />
               <Field label="Hospitals" value={doctor.hospitalNames.join(', ')} />
+              <Field label="Primary facility" value={doctor.primaryFacilityName} />
               <Field label="Rating" value={doctor.rating ? `${doctor.rating.toFixed(1)} ★` : '—'} />
               <Field label="Reviews" value={doctor.reviewCount} />
               <Field label="Patient recommendation" value={`${doctor.patientRecommendationPercent}%`} />
