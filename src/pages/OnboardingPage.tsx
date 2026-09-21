@@ -1,14 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { apiRequest, qs } from '../lib/api';
-import { Button, Card, ErrorText, Input, PageHeader, Select, Table } from '../components/ui';
+import { Button, Card, ErrorText, Input, PageHeader, Pagination, Select, Table } from '../components/ui';
 
 type Row = {
   id: string;
   status: string;
   role: string;
+  providerEntityType: string;
   providerEntityId: string;
   user: { name?: string | null; phone: string } | null;
+  createdAt?: string;
+};
+
+type Page = {
+  items: Row[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
 };
 
 type Candidate = {
@@ -28,6 +38,31 @@ const ROLES = [
   { value: 'pharmacy_admin', label: 'Pharmacy admin' },
 ] as const;
 
+const ROLE_LABEL: Record<string, string> = {
+  doctor: 'Doctor',
+  nurse: 'Caretaker',
+  clinic_admin: 'Clinic / Hospital',
+  diagnostics_admin: 'Diagnostics',
+  pharmacy_admin: 'Pharmacy',
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  doctor: 'Doctor',
+  nurse: 'Caretaker',
+  clinic: 'Clinic',
+  hospital: 'Hospital',
+  lab_facility: 'Diagnostics',
+  pharmacy_store: 'Pharmacy',
+};
+
+const STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'pending_review', label: 'Pending review' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'suspended', label: 'Suspended' },
+];
+
 export function OnboardingPage() {
   const qc = useQueryClient();
   const [role, setRole] = useState('doctor');
@@ -37,12 +72,25 @@ export function OnboardingPage() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [tableQ, setTableQ] = useState('');
+  const [debouncedTableQ, setDebouncedTableQ] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [page, setPage] = useState(1);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(nameQuery.trim()), 200);
     return () => window.clearTimeout(timer);
   }, [nameQuery]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedTableQ(tableQ.trim());
+      setPage(1);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [tableQ]);
 
   useEffect(() => {
     function onDocClick(event: MouseEvent) {
@@ -53,8 +101,17 @@ export function OnboardingPage() {
   }, []);
 
   const list = useQuery({
-    queryKey: ['onboarding'],
-    queryFn: () => apiRequest<{ items: Row[] }>(`/admin/onboarding${qs({ limit: 100 })}`),
+    queryKey: ['onboarding', debouncedTableQ, statusFilter, roleFilter, page],
+    queryFn: () =>
+      apiRequest<Page>(
+        `/admin/onboarding${qs({
+          q: debouncedTableQ || undefined,
+          status: statusFilter || undefined,
+          role: roleFilter || undefined,
+          page,
+          limit: 10,
+        })}`,
+      ),
   });
 
   const candidates = useQuery({
@@ -121,11 +178,13 @@ export function OnboardingPage() {
     create.mutate();
   }
 
+  const rows = list.data?.items ?? [];
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Provider Access"
-        subtitle="Grant app login to an existing doctor, caretaker, clinic, hospital, lab, or pharmacy. Phone and city come from that profile."
+        subtitle="Grant app login to an existing doctor, caretaker, clinic, hospital, lab, or pharmacy. Only profiles with access can be booked."
       />
       <Card>
         <form className="grid md:grid-cols-2 gap-3" onSubmit={onSubmit}>
@@ -209,37 +268,92 @@ export function OnboardingPage() {
         </form>
       </Card>
 
-      <Table headers={['Name', 'Phone', 'Role', 'Status', 'Entity', 'Actions']}>
-        {(list.data?.items ?? []).map((row) => (
-          <tr key={row.id}>
-            <td className="px-4 py-3">{row.user?.name || '—'}</td>
-            <td className="px-4 py-3">{row.user?.phone || '—'}</td>
-            <td className="px-4 py-3">{row.role}</td>
-            <td className="px-4 py-3">{row.status}</td>
-            <td className="px-4 py-3 font-mono text-xs">{row.providerEntityId}</td>
-            <td className="px-4 py-3 text-right">
-              {confirmId === row.id ? (
-                <div className="inline-flex items-center gap-2">
-                  <Button
-                    variant="danger"
-                    disabled={revoke.isPending}
-                    onClick={() => revoke.mutate(row.id)}
-                  >
-                    {revoke.isPending && revoke.variables === row.id ? 'Revoking…' : 'Confirm'}
-                  </Button>
-                  <Button variant="ghost" disabled={revoke.isPending} onClick={() => setConfirmId(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="danger" onClick={() => setConfirmId(row.id)}>
-                  Delete
-                </Button>
-              )}
+      <div className="flex flex-wrap gap-3">
+        <Input
+          placeholder="Search by name or phone"
+          value={tableQ}
+          onChange={(e) => setTableQ(e.target.value)}
+          className="max-w-xs"
+        />
+        <Select
+          value={roleFilter}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-[220px]"
+        >
+          <option value="">All roles</option>
+          {ROLES.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-[180px]"
+        >
+          {STATUS_OPTIONS.map((item) => (
+            <option key={item.value || 'all'} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <Table headers={['Name', 'Phone', 'Role', 'Type', 'Status', 'Actions']}>
+        {rows.length === 0 ? (
+          <tr>
+            <td colSpan={6} className="px-4 py-8 text-center text-[var(--muted)]">
+              {list.isFetching ? 'Loading…' : 'No provider access records.'}
             </td>
           </tr>
-        ))}
+        ) : (
+          rows.map((row) => (
+            <tr key={row.id}>
+              <td className="px-4 py-3">{row.user?.name || '—'}</td>
+              <td className="px-4 py-3">{row.user?.phone || '—'}</td>
+              <td className="px-4 py-3">{ROLE_LABEL[row.role] ?? row.role}</td>
+              <td className="px-4 py-3">{TYPE_LABEL[row.providerEntityType] ?? row.providerEntityType}</td>
+              <td className="px-4 py-3 capitalize">{row.status.replace('_', ' ')}</td>
+              <td className="px-4 py-3 text-right">
+                {confirmId === row.id ? (
+                  <div className="inline-flex items-center gap-2">
+                    <Button
+                      variant="danger"
+                      disabled={revoke.isPending}
+                      onClick={() => revoke.mutate(row.id)}
+                    >
+                      {revoke.isPending && revoke.variables === row.id ? 'Revoking…' : 'Confirm'}
+                    </Button>
+                    <Button variant="ghost" disabled={revoke.isPending} onClick={() => setConfirmId(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="danger" onClick={() => setConfirmId(row.id)}>
+                    Delete
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))
+        )}
       </Table>
+      {list.data ? (
+        <Pagination
+          page={list.data.page}
+          totalPages={list.data.totalPages}
+          total={list.data.total}
+          limit={list.data.limit}
+          onPage={setPage}
+        />
+      ) : null}
     </div>
   );
 }
