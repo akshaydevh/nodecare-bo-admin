@@ -36,6 +36,7 @@ export function OnboardingPage() {
   const [selected, setSelected] = useState<Candidate | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function OnboardingPage() {
 
   const list = useQuery({
     queryKey: ['onboarding'],
-    queryFn: () => apiRequest<{ items: Row[] }>('/admin/onboarding'),
+    queryFn: () => apiRequest<{ items: Row[] }>(`/admin/onboarding${qs({ limit: 100 })}`),
   });
 
   const candidates = useQuery({
@@ -87,6 +88,19 @@ export function OnboardingPage() {
       setError('');
       void qc.invalidateQueries({ queryKey: ['onboarding'] });
       void qc.invalidateQueries({ queryKey: ['onboarding-candidates'] });
+      void qc.invalidateQueries({ queryKey: ['ops-dashboard'] });
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const revoke = useMutation({
+    mutationFn: (id: string) => apiRequest(`/admin/onboarding/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      setConfirmId(null);
+      setError('');
+      void qc.invalidateQueries({ queryKey: ['onboarding'] });
+      void qc.invalidateQueries({ queryKey: ['onboarding-candidates'] });
+      void qc.invalidateQueries({ queryKey: ['ops-dashboard'] });
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -195,7 +209,7 @@ export function OnboardingPage() {
         </form>
       </Card>
 
-      <Table headers={['Name', 'Phone', 'Role', 'Status', 'Entity']}>
+      <Table headers={['Name', 'Phone', 'Role', 'Status', 'Entity', 'Actions']}>
         {(list.data?.items ?? []).map((row) => (
           <tr key={row.id}>
             <td className="px-4 py-3">{row.user?.name || '—'}</td>
@@ -203,6 +217,26 @@ export function OnboardingPage() {
             <td className="px-4 py-3">{row.role}</td>
             <td className="px-4 py-3">{row.status}</td>
             <td className="px-4 py-3 font-mono text-xs">{row.providerEntityId}</td>
+            <td className="px-4 py-3 text-right">
+              {confirmId === row.id ? (
+                <div className="inline-flex items-center gap-2">
+                  <Button
+                    variant="danger"
+                    disabled={revoke.isPending}
+                    onClick={() => revoke.mutate(row.id)}
+                  >
+                    {revoke.isPending && revoke.variables === row.id ? 'Revoking…' : 'Confirm'}
+                  </Button>
+                  <Button variant="ghost" disabled={revoke.isPending} onClick={() => setConfirmId(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="danger" onClick={() => setConfirmId(row.id)}>
+                  Delete
+                </Button>
+              )}
+            </td>
           </tr>
         ))}
       </Table>
