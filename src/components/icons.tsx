@@ -212,3 +212,40 @@ export function IconLogout({ className }: IconProps) {
     </Icon>
   );
 }
+
+export function IconChevron({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M6 9l6 6 6-6" />
+    </Icon>
+  );
+}
+
+export function IconAmbulance({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M3 11h10v7H3z" />
+      <path d="M13 13h3.5L19 16v2h-6" />
+      <circle cx="6.5" cy="18.5" r="1.5" />
+      <circle cx="16.5" cy="18.5" r="1.5" />
+      <path d="M8 6.5v4M6 8.5h4" />
+    </Icon>
+  );
+}
+
+export function IconPharmacy({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M12 8v8M8 12h8" />
+    </Icon>
+  );
+}
+
+export function IconCaretaker({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M19.5 12.6c0 4.4-7.5 8-7.5 8s-7.5-3.6-7.5-8c0-2.4 2-4.4 4.4-4.4 1.4 0 2.6.7 3.1 1.8.5-1.1 1.7-1.8 3.1-1.8 2.4 0 4.4 2 4.4 4.4z" />
+    </Icon>
+  );
+}

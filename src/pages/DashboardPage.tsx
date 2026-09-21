@@ -172,7 +172,9 @@ function reviewPath(type: string) {
   if (key.includes('doctor')) return '/doctors';
   if (key.includes('clinic') || key.includes('hospital') || key.includes('medical')) return '/medical-centres';
   if (key.includes('diagnos') || key.includes('lab') || key.includes('centre')) return '/centres';
-  return '/providers';
+  if (key.includes('pharmacy')) return '/providers/pharmacy';
+  if (key.includes('caretaker')) return '/providers/caretaker';
+  return '/providers/ambulance';
 }
 
 export function DashboardPage() {

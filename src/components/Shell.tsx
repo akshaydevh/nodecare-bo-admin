@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import {
   BrandLockup,
+  IconAmbulance,
   IconApps,
   IconBarChart,
   IconBell,
   IconBuilding,
   IconCalendar,
+  IconCaretaker,
+  IconChevron,
   IconLab,
   IconLayout,
   IconLogout,
+  IconPharmacy,
   IconSearch,
   IconSettings,
   IconShield,
@@ -22,6 +26,8 @@ import {
   IconUsers,
 } from './icons';
 
+type ProviderCounts = { ambulance: number; pharmacy: number; caretaker: number };
+
 type Summary = {
   doctors: number;
   medicalCentres: number;
@@ -29,11 +35,17 @@ type Summary = {
   serviceProviders: number;
   bookings: number;
   ambulancesActive: number;
+  providers?: ProviderCounts;
 };
+
+type CountKey = keyof Summary | keyof ProviderCounts;
+
+type NavItem = { to: string; label: string; end?: boolean; countKey?: CountKey; icon: ReactNode };
 
 const nav: {
   label: string;
-  items: { to: string; label: string; end?: boolean; countKey?: keyof Summary; icon: ReactNode }[];
+  collapsible?: boolean;
+  items: NavItem[];
 }[] = [
   {
     label: 'Overview',
@@ -41,20 +53,19 @@ const nav: {
   },
   {
     label: 'Network',
+    collapsible: true,
     items: [
       { to: '/doctors', label: 'Doctors', countKey: 'doctors', icon: <IconStethoscope className="size-4" /> },
       { to: '/medical-centres', label: 'Medical Centres', countKey: 'medicalCentres', icon: <IconBuilding className="size-4" /> },
       { to: '/centres', label: 'Diagnostic Centres', countKey: 'centres', icon: <IconLab className="size-4" /> },
-      {
-        to: '/providers',
-        label: 'Service Providers',
-        countKey: 'serviceProviders',
-        icon: <IconUsers className="size-4" />,
-      },
+      { to: '/providers/ambulance', label: 'Ambulances', countKey: 'ambulance', icon: <IconAmbulance className="size-4" /> },
+      { to: '/providers/pharmacy', label: 'Pharmacies', countKey: 'pharmacy', icon: <IconPharmacy className="size-4" /> },
+      { to: '/providers/caretaker', label: 'Caretakers', countKey: 'caretaker', icon: <IconCaretaker className="size-4" /> },
     ],
   },
   {
     label: 'Operations',
+    collapsible: true,
     items: [
       { to: '/bookings', label: 'Bookings', countKey: 'bookings', icon: <IconCalendar className="size-4" /> },
       { to: '/patients', label: 'Patients', icon: <IconUser className="size-4" /> },
@@ -63,6 +74,7 @@ const nav: {
   },
   {
     label: 'App Configuration',
+    collapsible: true,
     items: [
       { to: '/app-config/home', label: 'Home Content', icon: <IconApps className="size-4" /> },
       { to: '/app-config/discovery', label: 'Discovery', icon: <IconSearch className="size-4" /> },
@@ -74,6 +86,7 @@ const nav: {
   },
   {
     label: 'Administration',
+    collapsible: true,
     items: [
       { to: '/onboarding', label: 'Provider Access', icon: <IconShield className="size-4" /> },
       { to: '/team', label: 'Team & Roles', icon: <IconShield className="size-4" /> },
@@ -81,6 +94,39 @@ const nav: {
     ],
   },
 ];
+
+const NAV_COLLAPSED_KEY = 'nod-ops-nav-collapsed';
+
+function readCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(NAV_COLLAPSED_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, boolean>;
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
+
+function writeCollapsed(next: Record<string, boolean>) {
+  localStorage.setItem(NAV_COLLAPSED_KEY, JSON.stringify(next));
+}
+
+function resolveCount(counts: Summary | undefined, countKey?: CountKey) {
+  if (!counts || !countKey) return undefined;
+  if (countKey === 'ambulance' || countKey === 'pharmacy' || countKey === 'caretaker') {
+    return counts.providers?.[countKey];
+  }
+  const value = counts[countKey];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function groupContainsPath(items: NavItem[], pathname: string) {
+  return items.some((item) =>
+    item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
+}
 
 function initials(name?: string | null) {
   if (!name) return 'AD';
@@ -100,9 +146,101 @@ function roleLabel(role?: string) {
   return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function NavGroup({
+  group,
+  counts,
+  pathname,
+}: {
+  group: (typeof nav)[number];
+  counts: Summary | undefined;
+  pathname: string;
+}) {
+  const hasActive = groupContainsPath(group.items, pathname);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!group.collapsible) return false;
+    return readCollapsed()[group.label] === true;
+  });
+
+  useEffect(() => {
+    if (hasActive) setCollapsed(false);
+  }, [pathname, hasActive]);
+
+  function toggle() {
+    if (!group.collapsible) return;
+    setCollapsed((current) => {
+      const next = !current;
+      writeCollapsed({ ...readCollapsed(), [group.label]: next });
+      return next;
+    });
+  }
+
+  const links = (
+    <div className="space-y-0.5">
+      {group.items.map((item) => {
+        const count = resolveCount(counts, item.countKey);
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end ?? false}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition ${
+                isActive
+                  ? 'bg-[var(--brand)] font-medium text-white'
+                  : 'text-white/75 hover:bg-white/10 hover:text-white'
+              }`
+            }
+          >
+            <span className="opacity-90">{item.icon}</span>
+            <span className="flex-1 truncate">{item.label}</span>
+            {count !== undefined ? (
+              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] tabular-nums text-white/70">
+                {count}
+              </span>
+            ) : null}
+          </NavLink>
+        );
+      })}
+    </div>
+  );
+
+  if (!group.collapsible) {
+    return (
+      <div>
+        <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-muted)]">
+          {group.label}
+        </div>
+        {links}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={!collapsed}
+        className="w-full flex items-center gap-2 px-3 mb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-muted)] hover:text-white/90 cursor-pointer"
+      >
+        <span className="flex-1 text-left truncate">{group.label}</span>
+        <IconChevron
+          className={`size-3.5 shrink-0 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ${collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}
+      >
+        <div className="overflow-hidden">{links}</div>
+      </div>
+    </div>
+  );
+}
+
 export function Shell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [q, setQ] = useState('');
   const summary = useQuery({
     queryKey: ['ops-summary'],
@@ -127,35 +265,7 @@ export function Shell() {
         </div>
         <nav className="flex-1 px-3 pb-3 space-y-5 overflow-y-auto">
           {nav.map((group) => (
-            <div key={group.label}>
-              <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-muted)]">
-                {group.label}
-              </div>
-              <div className="space-y-0.5">
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.end ?? false}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition ${
-                        isActive
-                          ? 'bg-[var(--brand)] font-medium text-white'
-                          : 'text-white/75 hover:bg-white/10 hover:text-white'
-                      }`
-                    }
-                  >
-                    <span className="opacity-90">{item.icon}</span>
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {item.countKey && counts ? (
-                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] tabular-nums text-white/70">
-                        {counts[item.countKey]}
-                      </span>
-                    ) : null}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
+            <NavGroup key={group.label} group={group} counts={counts} pathname={location.pathname} />
           ))}
         </nav>
         <div className="p-4 border-t border-white/10 flex items-center gap-3">

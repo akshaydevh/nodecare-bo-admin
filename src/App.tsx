@@ -52,7 +52,8 @@ export default function App() {
                 <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="medical-centres" element={<MedicalCentresPage />} />
                 <Route path="centres" element={<CentresPage />} />
-                <Route path="providers" element={<ProvidersPage />} />
+                <Route path="providers" element={<Navigate to="/providers/ambulance" replace />} />
+                <Route path="providers/:type" element={<ProvidersPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="reports" element={<ReportsPage />} />

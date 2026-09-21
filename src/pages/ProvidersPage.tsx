@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { ApiError, apiRequest, apiUploadBinary, qs } from '../lib/api';
 import { formatInr } from '../lib/format';
 import { PhotoCropModal } from '../components/PhotoCropper';
@@ -16,7 +17,6 @@ import {
   StatusDot,
   StatusPill,
   Table,
-  Tabs,
   Textarea,
 } from '../components/ui';
 
@@ -260,6 +260,35 @@ function noun(type: ProviderKind) {
   return 'caretaker';
 }
 
+const KIND_META: Record<
+  ProviderKind,
+  { title: string; subtitle: string; add: string; plural: string }
+> = {
+  ambulance: {
+    title: 'Ambulances',
+    subtitle: 'Fleet vehicles available for on-demand emergency booking.',
+    add: '+ Add ambulance',
+    plural: 'ambulances',
+  },
+  pharmacy: {
+    title: 'Pharmacies',
+    subtitle: 'Partner pharmacies available for on-demand medicine orders.',
+    add: '+ Add pharmacy',
+    plural: 'pharmacies',
+  },
+  caretaker: {
+    title: 'Caretakers',
+    subtitle: 'Home-care professionals available for on-demand booking.',
+    add: '+ Add caretaker',
+    plural: 'caretakers',
+  },
+};
+
+function parseKind(value: string | undefined): ProviderKind | null {
+  if (value === 'ambulance' || value === 'pharmacy' || value === 'caretaker') return value;
+  return null;
+}
+
 function toAmbulanceForm(d: AmbulanceDetail): AmbulanceForm {
   const { lat, lng } = coords(d.location);
   return {
@@ -456,7 +485,7 @@ function StatusFields({
 
 export function ProvidersPage() {
   const qc = useQueryClient();
-  const [type, setType] = useState<ProviderKind>('ambulance');
+  const type = parseKind(useParams().type);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -488,13 +517,14 @@ export function ProvidersPage() {
   const list = useQuery({
     queryKey: ['network-providers', type, q, status, page],
     queryFn: () =>
-      apiRequest<Page>(`/admin/network/providers${qs({ type, q, status, page, limit: 10 })}`),
+      apiRequest<Page>(`/admin/network/providers${qs({ type: type ?? undefined, q, status, page, limit: 10 })}`),
+    enabled: Boolean(type),
   });
 
   const detail = useQuery({
     queryKey: ['network-provider', type, viewId],
     queryFn: () => apiRequest<ProviderDetail>(`/admin/network/providers/${type}/${viewId}`),
-    enabled: Boolean(viewId),
+    enabled: Boolean(type && viewId),
   });
 
   useEffect(() => {
@@ -506,6 +536,7 @@ export function ProvidersPage() {
 
   const create = useMutation({
     mutationFn: () => {
+      if (!type) throw new Error('Invalid provider type');
       if (type === 'ambulance') {
         return apiRequest('/admin/network/providers/ambulance', {
           method: 'POST',
@@ -534,7 +565,7 @@ export function ProvidersPage() {
 
   const update = useMutation({
     mutationFn: () => {
-      if (!viewId) throw new Error('Nothing to save');
+      if (!type || !viewId) throw new Error('Nothing to save');
       const body =
         type === 'ambulance'
           ? editAmbulance && ambulancePayload(editAmbulance)
@@ -558,7 +589,10 @@ export function ProvidersPage() {
   });
 
   const remove = useMutation({
-    mutationFn: () => apiRequest(`/admin/network/providers/${type}/${viewId}`, { method: 'DELETE' }),
+    mutationFn: () => {
+      if (!type || !viewId) throw new Error('Nothing to delete');
+      return apiRequest(`/admin/network/providers/${type}/${viewId}`, { method: 'DELETE' });
+    },
     onSuccess: () => {
       setViewId(null);
       setConfirmDelete(false);
@@ -577,6 +611,7 @@ export function ProvidersPage() {
 
   const uploadPhoto = useMutation({
     mutationFn: async (blob: Blob) => {
+      if (!type) throw new Error('Invalid provider type');
       if (photoTarget === 'register') {
         const data = await apiUploadBinary<{ publicUrl: string; key: string }>(
           `/admin/network/providers/${type}/photo`,
@@ -665,16 +700,38 @@ export function ProvidersPage() {
     setCropSrc(URL.createObjectURL(file));
   }
 
+  useEffect(() => {
+    setQ('');
+    setStatus('');
+    setPage(1);
+    setRegisterOpen(false);
+    setAmbulance(emptyAmbulance());
+    setPharmacy(emptyPharmacy());
+    setCaretaker(emptyCaretaker());
+    setError('');
+    setViewId(null);
+    setMode('view');
+    setEditAmbulance(null);
+    setEditPharmacy(null);
+    setEditCaretaker(null);
+    setConfirmDelete(false);
+    setDetailError('');
+  }, [type]);
+
   const counts = summary.data?.providers;
   const data = list.data;
   const provider = detail.data;
 
+  if (!type) return <Navigate to="/providers/ambulance" replace />;
+
+  const meta = KIND_META[type];
+
   return (
     <div>
       <PageHeader
-        eyebrow={`Network • ${counts ? counts.ambulance + counts.pharmacy + counts.caretaker : 0} providers`}
-        title="Service Providers"
-        subtitle="Ambulance fleets, pharmacies and caretakers available for on-demand booking."
+        eyebrow={`Network • ${counts?.[type] ?? 0} ${meta.plural}`}
+        title={meta.title}
+        subtitle={meta.subtitle}
         action={
           <Button
             onClick={() => {
@@ -682,28 +739,13 @@ export function ProvidersPage() {
               setRegisterOpen(true);
             }}
           >
-            {type === 'ambulance' ? '+ Add ambulance' : type === 'pharmacy' ? '+ Add pharmacy' : '+ Add caretaker'}
+            {meta.add}
           </Button>
         }
       />
-      <div className="mb-4">
-        <Tabs
-          value={type}
-          onChange={(id) => {
-            setType(id as ProviderKind);
-            setPage(1);
-            closeDetail();
-          }}
-          items={[
-            { id: 'ambulance', label: 'Ambulance', count: counts?.ambulance },
-            { id: 'pharmacy', label: 'Pharmacy', count: counts?.pharmacy },
-            { id: 'caretaker', label: 'Caretaker', count: counts?.caretaker },
-          ]}
-        />
-      </div>
       <div className="flex flex-wrap gap-3 mb-4">
         <Input
-          placeholder={`Search ${noun(type)}s`}
+          placeholder={`Search ${meta.plural}`}
           value={q}
           onChange={(e) => {
             setPage(1);
