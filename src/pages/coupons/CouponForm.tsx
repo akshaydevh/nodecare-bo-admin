@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Button, ErrorText, FieldLabel, Input, Modal } from '../../components/ui';
-import { apiRequest } from '../../lib/api';
+import { ApiError, apiRequest } from '../../lib/api';
 import { istDateString } from '../../lib/format';
 
 export type Coupon = {
@@ -57,6 +57,7 @@ export function CouponForm({ coupon, onClose }: { coupon: Coupon | null; onClose
     const value = num(d.value);
     if (value === null || !(value > 0)) return 'Enter a discount value above 0';
     if (d.discountType === 'percent' && value > 100) return 'A percent discount cannot exceed 100';
+    if (d.discountType === 'fixed' && !Number.isInteger(value)) return 'Fixed discounts must be whole rupees';
     for (const [label, v, int, min] of [
       ['Minimum order', d.minimumAmount, false, 0],
       ['Maximum discount', d.maximumDiscount, false, 1],
@@ -90,7 +91,13 @@ export function CouponForm({ coupon, onClose }: { coupon: Coupon | null; onClose
       void qc.invalidateQueries({ queryKey: ['coupons'] });
       onClose();
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      if (err instanceof ApiError && (err.status === 409 || err.code === 'COUPON_EXISTS')) {
+        setError(`A coupon with the code ${d.code.trim().toUpperCase()} already exists. Choose a different code.`);
+      } else {
+        setError(err.message);
+      }
+    },
   });
 
   function onSubmit(e: FormEvent) {
@@ -141,7 +148,7 @@ export function CouponForm({ coupon, onClose }: { coupon: Coupon | null; onClose
               aria-label="Discount value"
               type="number"
               min={0}
-              step="any"
+              step={d.discountType === 'fixed' ? 1 : 'any'}
               value={d.value}
               onChange={(e) => patch({ value: e.target.value })}
               placeholder={d.discountType === 'percent' ? '10' : '100'}
