@@ -19,6 +19,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SearchPage } from './pages/SearchPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SupportTicketsPage } from './pages/SupportTicketsPage';
 import { TeamPage } from './pages/TeamPage';
 import {
   DiagnosticsConfigPage,
@@ -66,6 +67,7 @@ export default function App() {
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />
                 <Route path="messages" element={<MessagesPage />} />
+                <Route path="support" element={<SupportTicketsPage />} />
                 <Route path="app-config/home" element={<HomeContentPage />} />
                 <Route path="app-config/discovery" element={<DiscoveryConfigPage />} />
                 <Route path="app-config/diagnostics" element={<DiagnosticsConfigPage />} />

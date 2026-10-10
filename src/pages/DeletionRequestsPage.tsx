@@ -104,7 +104,7 @@ export function DeletionRequestsPage() {
           <TableMessage colSpan={HEADERS.length}>
             <SkeletonRows rows={4} className="h-10" />
           </TableMessage>
-        ) : items.length === 0 ? (
+        ) : list.data && items.length === 0 ? (
           <TableMessage colSpan={HEADERS.length}>
             <EmptyState
               icon={<IconUserX className="size-5" />}

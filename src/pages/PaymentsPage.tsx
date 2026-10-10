@@ -189,7 +189,7 @@ export function PaymentsPage() {
           <TableMessage colSpan={HEADERS.length}>
             <SkeletonRows rows={6} className="h-10" />
           </TableMessage>
-        ) : items.length === 0 ? (
+        ) : list.data && items.length === 0 ? (
           <TableMessage colSpan={HEADERS.length}>
             <EmptyState
               icon={<IconCard className="size-5" />}
