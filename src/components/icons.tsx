@@ -242,6 +242,15 @@ export function IconPharmacy({ className }: IconProps) {
   );
 }
 
+export function IconMail({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 7 9-7" />
+    </Icon>
+  );
+}
+
 export function IconCaretaker({ className }: IconProps) {
   return (
     <Icon className={className}>

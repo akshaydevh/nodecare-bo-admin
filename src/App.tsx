@@ -14,6 +14,7 @@ import { PatientsPage } from './pages/PatientsPage';
 import { ProvidersPage } from './pages/ProvidersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SearchPage } from './pages/SearchPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TeamPage } from './pages/TeamPage';
 import {
@@ -58,6 +59,7 @@ export default function App() {
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />
+                <Route path="messages" element={<MessagesPage />} />
                 <Route path="app-config/home" element={<HomeContentPage />} />
                 <Route path="app-config/discovery" element={<DiscoveryConfigPage />} />
                 <Route path="app-config/diagnostics" element={<DiagnosticsConfigPage />} />

@@ -17,6 +17,7 @@ import {
   IconLab,
   IconLayout,
   IconLogout,
+  IconMail,
   IconPharmacy,
   IconSearch,
   IconSettings,
@@ -35,6 +36,7 @@ type Summary = {
   serviceProviders: number;
   bookings: number;
   ambulancesActive: number;
+  websiteMessages?: number;
   providers?: ProviderCounts;
 };
 
@@ -70,6 +72,7 @@ const nav: {
       { to: '/bookings', label: 'Bookings', countKey: 'bookings', icon: <IconCalendar className="size-4" /> },
       { to: '/patients', label: 'Patients', icon: <IconUser className="size-4" /> },
       { to: '/reports', label: 'Reports & Sales', icon: <IconBarChart className="size-4" /> },
+      { to: '/messages', label: 'Website messages', countKey: 'websiteMessages', icon: <IconMail className="size-4" /> },
     ],
   },
   {

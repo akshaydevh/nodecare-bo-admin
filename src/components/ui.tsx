@@ -180,11 +180,13 @@ export function StatusPill({
     available: 'bg-[#ecfdf3] text-[#067647]',
     'on trip': 'bg-[#fef3f2] text-[#b42318]',
     'needs review': 'bg-[#fef3f2] text-[#b42318]',
+    new: 'bg-[#fffaeb] text-[#b54708]',
+    replied: 'bg-[#ecfdf3] text-[#067647]',
   };
   const dot =
-    key === 'verified' || key === 'active' || key === 'available' || key === 'completed'
+    key === 'verified' || key === 'active' || key === 'available' || key === 'completed' || key === 'replied'
       ? 'bg-[#12b76a]'
-      : key === 'pending' || key === 'on trip' || key === 'en route'
+      : key === 'pending' || key === 'on trip' || key === 'en route' || key === 'new'
         ? 'bg-[#f79009]'
         : key === 'suspended' || key === 'cancelled'
           ? 'bg-[#f04438]'
