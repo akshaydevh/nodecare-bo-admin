@@ -15,6 +15,7 @@ import {
   TableMessage,
 } from '../../components/ui';
 import { apiRequest, qs, type AdminUser } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { formatDate, relativeTime, titleCase } from '../../lib/format';
 import type { StatusTarget } from './AccountStatusDialog';
 
@@ -39,6 +40,7 @@ const HEADERS = ['Account', 'Phone', 'Role', 'Status', 'Last sign-in', 'Joined',
 
 /** Every login on the platform (patients and provider accounts), from /admin/users. */
 export function AccountsTable({ canWrite, onStatus }: { canWrite: boolean; onStatus: (a: StatusTarget) => void }) {
+  const { user } = useAuth();
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
@@ -126,7 +128,9 @@ export function AccountsTable({ canWrite, onStatus }: { canWrite: boolean; onSta
                 </td>
                 <td className="px-4 py-3 text-[var(--muted)] whitespace-nowrap">{formatDate(u.createdAt)}</td>
                 <td className="px-4 py-3 text-right">
-                  {team ? (
+                  {u.id === user?.id ? (
+                    <span className="text-xs text-[var(--muted)]">You</span>
+                  ) : team ? (
                     <Link to="/team" className="text-sm text-[var(--brand)]">
                       Manage in Team
                     </Link>

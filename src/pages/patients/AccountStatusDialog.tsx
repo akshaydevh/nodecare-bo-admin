@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ConfirmDialog } from '../../components/ui';
-import { apiRequest } from '../../lib/api';
+import { ApiError, apiRequest } from '../../lib/api';
 
 export type StatusTarget = { id: string; name: string; accountStatus: string };
 
@@ -23,7 +23,16 @@ export function AccountStatusDialog({ account, onClose }: { account: StatusTarge
       setError('');
       onClose();
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      // The API refuses self-changes and back-office accounts; say where to go instead.
+      if (err instanceof ApiError && err.code === 'SELF_STATUS_CHANGE') {
+        setError('You cannot change the status of your own account.');
+      } else if (err instanceof ApiError && err.code === 'TEAM_ACCOUNT') {
+        setError('This is a back-office account. Manage it from Team & Roles.');
+      } else {
+        setError(err.message);
+      }
+    },
   });
 
   return (
