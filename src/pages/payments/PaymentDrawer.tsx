@@ -80,6 +80,7 @@ function RefundForm({ payment, onDone }: { payment: Payment; onDone: () => void 
               type="radio"
               name="refund-kind"
               value={k}
+              aria-label={k === 'full' ? 'Full refund' : 'Partial refund'}
               checked={kind === k}
               onChange={() => setKind(k)}
               className="sr-only"

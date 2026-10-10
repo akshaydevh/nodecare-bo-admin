@@ -12,6 +12,7 @@ import {
   IconBell,
   IconBuilding,
   IconCalendar,
+  IconCalendarClock,
   IconCard,
   IconCaretaker,
   IconChevron,
@@ -64,6 +65,7 @@ const nav: {
       { to: '/providers/ambulance', label: 'Ambulances', countKey: 'ambulance', icon: <IconAmbulance className="size-4" /> },
       { to: '/providers/pharmacy', label: 'Pharmacies', countKey: 'pharmacy', icon: <IconPharmacy className="size-4" /> },
       { to: '/providers/caretaker', label: 'Caretakers', countKey: 'caretaker', icon: <IconCaretaker className="size-4" /> },
+      { to: '/availability', label: 'Availability', icon: <IconCalendarClock className="size-4" /> },
     ],
   },
   {

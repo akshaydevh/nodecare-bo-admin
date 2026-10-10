@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
 import { AuthProvider, useAuth } from './lib/auth';
+import { AvailabilityPage } from './pages/AvailabilityPage';
 import { BookingsPage } from './pages/BookingsPage';
 import { CentresPage } from './pages/CentresPage';
 import { MedicalCentresPage } from './pages/MedicalCentresPage';
@@ -56,6 +57,7 @@ export default function App() {
                 <Route path="centres" element={<CentresPage />} />
                 <Route path="providers" element={<Navigate to="/providers/ambulance" replace />} />
                 <Route path="providers/:type" element={<ProvidersPage />} />
+                <Route path="availability" element={<AvailabilityPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="payments" element={<PaymentsPage />} />
