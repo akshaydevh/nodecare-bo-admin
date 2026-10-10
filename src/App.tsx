@@ -8,6 +8,7 @@ import { CentresPage } from './pages/CentresPage';
 import { MedicalCentresPage } from './pages/MedicalCentresPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { DeletionRequestsPage } from './pages/DeletionRequestsPage';
 import { DoctorsPage } from './pages/DoctorsPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="availability" element={<AvailabilityPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
+                <Route path="deletion-requests" element={<DeletionRequestsPage />} />
                 <Route path="payments" element={<PaymentsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />

@@ -26,6 +26,7 @@ import {
   IconShield,
   IconStethoscope,
   IconUser,
+  IconUserX,
   IconUsers,
 } from './icons';
 
@@ -39,12 +40,21 @@ type Summary = {
   bookings: number;
   ambulancesActive: number;
   websiteMessages?: number;
+  deletionRequests?: number;
   providers?: ProviderCounts;
 };
 
 type CountKey = keyof Summary | keyof ProviderCounts;
 
-type NavItem = { to: string; label: string; end?: boolean; countKey?: CountKey; icon: ReactNode };
+type NavItem = {
+  to: string;
+  label: string;
+  end?: boolean;
+  countKey?: CountKey;
+  /** Highlight the badge when the count needs attention (> 0). */
+  alert?: boolean;
+  icon: ReactNode;
+};
 
 const nav: {
   label: string;
@@ -74,6 +84,13 @@ const nav: {
     items: [
       { to: '/bookings', label: 'Bookings', countKey: 'bookings', icon: <IconCalendar className="size-4" /> },
       { to: '/patients', label: 'Patients', icon: <IconUser className="size-4" /> },
+      {
+        to: '/deletion-requests',
+        label: 'Deletion requests',
+        countKey: 'deletionRequests',
+        alert: true,
+        icon: <IconUserX className="size-4" />,
+      },
       { to: '/reports', label: 'Reports & Sales', icon: <IconBarChart className="size-4" /> },
       { to: '/messages', label: 'Website messages', countKey: 'websiteMessages', icon: <IconMail className="size-4" /> },
     ],
@@ -204,8 +221,13 @@ function NavGroup({
           >
             <span className="opacity-90">{item.icon}</span>
             <span className="flex-1 truncate">{item.label}</span>
-            {count !== undefined ? (
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] tabular-nums text-white/70">
+            {count !== undefined && (!item.alert || count > 0) ? (
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                  item.alert ? 'bg-[#f79009] font-semibold text-white' : 'bg-white/10 text-white/70'
+                }`}
+                aria-label={item.alert ? `${count} pending` : undefined}
+              >
                 {count}
               </span>
             ) : null}
