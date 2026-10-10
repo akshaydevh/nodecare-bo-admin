@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { BrandMark } from '../components/icons';
 import { Button, Card, ConfirmDialog, FieldLabel, Input, PageHeader, Textarea } from '../components/ui';
 import { apiRequest } from '../lib/api';
@@ -55,6 +55,8 @@ export function BroadcastPage() {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState<{ recipients: number; audience: Audience } | null>(null);
+  // Guards against a second send from a double click before React re-renders the busy state.
+  const inFlight = useRef(false);
 
   const valid = title.trim().length >= 3 && body.trim().length >= 3;
   const audienceInfo = AUDIENCES.find((a) => a.id === audience)!;
@@ -65,6 +67,9 @@ export function BroadcastPage() {
         method: 'POST',
         body: JSON.stringify({ audience, title: title.trim(), body: body.trim() }),
       }),
+    onSettled: () => {
+      inFlight.current = false;
+    },
     onSuccess: (r) => {
       setSent({ recipients: r.recipients, audience });
       setConfirming(false);
@@ -78,7 +83,7 @@ export function BroadcastPage() {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSent(null);
-    if (valid) setConfirming(true);
+    if (valid && !send.isPending) setConfirming(true);
   }
 
   return (
@@ -95,7 +100,15 @@ export function BroadcastPage() {
           ) : null}
           {sent ? (
             <div className="mb-4 rounded-lg bg-[#ecfdf3] px-3 py-2 text-sm text-[#067647]" role="status">
-              Sent to {sent.recipients.toLocaleString('en-IN')} {sent.audience === 'all' ? 'people' : sent.audience}.
+              Sent to {sent.recipients.toLocaleString('en-IN')}{' '}
+              {sent.recipients === 1
+                ? sent.audience === 'all'
+                  ? 'person'
+                  : sent.audience.replace(/s$/, '')
+                : sent.audience === 'all'
+                  ? 'people'
+                  : sent.audience}
+              {sent.recipients === 0 ? ' — no active accounts matched this audience.' : '.'}
             </div>
           ) : null}
           <form className="space-y-5" onSubmit={onSubmit}>
@@ -153,8 +166,8 @@ export function BroadcastPage() {
               />
             </div>
             <p className="text-xs text-[var(--muted)]">Title and message need at least 3 characters. Only active accounts receive it.</p>
-            <Button type="submit" disabled={!valid || !canSend}>
-              Review and send
+            <Button type="submit" disabled={!valid || !canSend || send.isPending}>
+              {send.isPending ? 'Sending…' : 'Review and send'}
             </Button>
           </form>
         </Card>
@@ -181,7 +194,11 @@ export function BroadcastPage() {
         busyLabel="Sending…"
         busy={send.isPending}
         error={error}
-        onConfirm={() => send.mutate()}
+        onConfirm={() => {
+          if (inFlight.current || send.isPending) return;
+          inFlight.current = true;
+          send.mutate();
+        }}
         onClose={() => {
           setConfirming(false);
           setError('');

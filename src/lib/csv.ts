@@ -4,7 +4,7 @@ type Cell = string | number | boolean | null | undefined;
 function csvCell(value: Cell): string {
   if (value === null || value === undefined) return '';
   let text = String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  if (/^[=+\-@|\t\r]/.test(text)) text = `'${text}`;
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
