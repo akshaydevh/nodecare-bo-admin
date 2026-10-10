@@ -53,6 +53,7 @@ export function DeletionRequestsPage() {
     queryFn: () => apiRequestWithMeta<DeletionRequest[]>(`/admin/account-deletion-requests${qs({ status, page, limit: 20 })}`),
     placeholderData: keepPreviousData,
   });
+  const items = list.data?.data ?? [];
 
   const resolve = useMutation({
     mutationFn: ({ request, action }: Resolve) =>
@@ -64,6 +65,8 @@ export function DeletionRequestsPage() {
       setResolving(null);
       setNote('');
       setError('');
+      // Resolving the last row of a later page (pending tab) would leave an empty page behind.
+      if (status === 'pending' && items.length === 1 && page > 1) setPage(page - 1);
       void qc.invalidateQueries({ queryKey: ['deletion-requests'] });
       void qc.invalidateQueries({ queryKey: ['ops-summary'] });
       void qc.invalidateQueries({ queryKey: ['ops-patients'] });
@@ -71,8 +74,9 @@ export function DeletionRequestsPage() {
     onError: (err: Error) => setError(err.message),
   });
 
-  const items = list.data?.data ?? [];
   const meta = list.data?.meta;
+  // Clamp if the list shrank under us (e.g. another operator resolved requests).
+  if (meta && meta.total > 0 && page > meta.totalPages) setPage(meta.totalPages);
   const completing = resolving?.action === 'complete';
   const who = resolving ? resolving.request.name || resolving.request.phone : '';
 
