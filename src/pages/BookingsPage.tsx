@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { IconCalendar } from '../components/icons';
 import {
   Button,
@@ -48,7 +49,20 @@ export function BookingsPage() {
   const [status, setStatus] = useState('');
   const [range, setRange] = useState('7d');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string | null>(null);
+  // `?booking=<id>` deep-links straight into a booking (e.g. from Payments).
+  const [params, setParams] = useSearchParams();
+  const selected = params.get('booking');
+  function setSelected(id: string | null) {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id) next.set('booking', id);
+        else next.delete('booking');
+        return next;
+      },
+      { replace: true },
+    );
+  }
   const [exportError, setExportError] = useState('');
 
   const list = useQuery({

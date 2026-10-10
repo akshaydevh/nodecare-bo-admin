@@ -11,6 +11,7 @@ import { DoctorsPage } from './pages/DoctorsPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { PatientsPage } from './pages/PatientsPage';
+import { PaymentsPage } from './pages/PaymentsPage';
 import { ProvidersPage } from './pages/ProvidersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SearchPage } from './pages/SearchPage';
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="providers/:type" element={<ProvidersPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
+                <Route path="payments" element={<PaymentsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />
                 <Route path="messages" element={<MessagesPage />} />

@@ -12,6 +12,7 @@ import {
   IconBell,
   IconBuilding,
   IconCalendar,
+  IconCard,
   IconCaretaker,
   IconChevron,
   IconLab,
@@ -74,6 +75,11 @@ const nav: {
       { to: '/reports', label: 'Reports & Sales', icon: <IconBarChart className="size-4" /> },
       { to: '/messages', label: 'Website messages', countKey: 'websiteMessages', icon: <IconMail className="size-4" /> },
     ],
+  },
+  {
+    label: 'Finance',
+    collapsible: true,
+    items: [{ to: '/payments', label: 'Payments', icon: <IconCard className="size-4" /> }],
   },
   {
     label: 'App Configuration',
