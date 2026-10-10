@@ -1,14 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { IconLifebuoy } from '../components/icons';
 import {
-  Button,
-  Card,
-  DetailRow,
-  Drawer,
   EmptyState,
   ErrorText,
-  FieldLabel,
+  Input,
   PageHeader,
   Pagination,
   Select,
@@ -18,176 +14,44 @@ import {
   TableMessage,
   Tabs,
 } from '../components/ui';
-import { apiRequest, apiRequestWithMeta, qs } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { apiRequestWithMeta, qs } from '../lib/api';
 import { formatDateTime, relativeTime } from '../lib/format';
-import { can } from '../lib/roles';
+import { TicketDrawer } from './support/TicketDrawer';
+import { CATEGORY_LABEL, STATUS_LABEL, type Category, type Priority, type Ticket, type TicketStatus } from './support/types';
 
-type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-type Priority = 'low' | 'normal' | 'high';
+const HEADERS = ['Ticket', 'Patient', 'Subject', 'Category', 'Priority', 'Status', 'Last activity'];
 
-type Ticket = {
-  id: string;
-  ticketId: string;
-  userId: string;
-  category: 'booking' | 'payment' | 'medical' | 'account' | 'other';
-  subject: string;
-  message: string;
-  status: TicketStatus;
-  priority: Priority;
-  assignedTo: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const STATUS_LABEL: Record<TicketStatus, string> = {
-  open: 'Open',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
-};
-
-const HEADERS = ['Ticket', 'Subject', 'Category', 'Priority', 'Status', 'Opened', ''];
-
-function TicketDrawer({ ticket, onClose }: { ticket: Ticket | null; onClose: () => void }) {
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  const canWrite = can(user?.role, 'bookings');
-  const [status, setStatus] = useState<TicketStatus>(ticket?.status ?? 'open');
-  const [priority, setPriority] = useState<Priority>(ticket?.priority ?? 'normal');
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
-
-  const update = useMutation({
-    mutationFn: () =>
-      apiRequest<Ticket>(`/admin/support/tickets/${ticket!.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status, priority }),
-      }),
-    onSuccess: () => {
-      setError('');
-      setSaved(true);
-      void qc.invalidateQueries({ queryKey: ['support-tickets'] });
-    },
-    onError: (err: Error) => setError(err.message),
-  });
-
-  const dirty = ticket ? status !== ticket.status || priority !== ticket.priority : false;
-
-  return (
-    <Drawer
-      open={Boolean(ticket)}
-      title={ticket?.subject ?? 'Ticket'}
-      subtitle={ticket ? `${ticket.ticketId} · ${ticket.category}` : undefined}
-      onClose={onClose}
-      size="lg"
-    >
-      {ticket ? (
-        <div className="space-y-5">
-          <div className="flex flex-wrap gap-2">
-            <StatusPill status={ticket.status} label={STATUS_LABEL[ticket.status]} />
-            <StatusPill status={ticket.priority} label={`${ticket.priority} priority`} />
-          </div>
-          <Card className="p-4!">
-            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] mb-1">
-              Message from patient
-            </div>
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
-          </Card>
-          <Card className="p-4! divide-y divide-[var(--line)]">
-            <DetailRow label="Opened">{formatDateTime(ticket.createdAt)}</DetailRow>
-            <DetailRow label="Last update">{formatDateTime(ticket.updatedAt)}</DetailRow>
-            {ticket.resolvedAt ? <DetailRow label="Resolved">{formatDateTime(ticket.resolvedAt)}</DetailRow> : null}
-            <DetailRow label="User ID">
-              <span className="font-mono text-xs">{ticket.userId}</span>
-            </DetailRow>
-          </Card>
-
-          {canWrite ? (
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSaved(false);
-                update.mutate();
-              }}
-            >
-              <div className="text-[15px] font-semibold">Update ticket</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel htmlFor="ticket-status">Status</FieldLabel>
-                  <Select
-                    id="ticket-status"
-                    value={status}
-                    onChange={(e) => {
-                      setSaved(false);
-                      setStatus(e.target.value as TicketStatus);
-                    }}
-                  >
-                    {(Object.keys(STATUS_LABEL) as TicketStatus[]).map((s) => (
-                      <option key={s} value={s}>
-                        {STATUS_LABEL[s]}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <FieldLabel htmlFor="ticket-priority">Priority</FieldLabel>
-                  <Select
-                    id="ticket-priority"
-                    value={priority}
-                    onChange={(e) => {
-                      setSaved(false);
-                      setPriority(e.target.value as Priority);
-                    }}
-                  >
-                    <option value="low">Low</option>
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
-                  </Select>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--muted)]">
-                The patient gets a notification with the new status. Replies are handled outside the console for now.
-              </p>
-              <ErrorText>{error}</ErrorText>
-              {saved ? (
-                <p className="text-sm text-[#067647]" role="status">
-                  Ticket updated and assigned to you.
-                </p>
-              ) : null}
-              <Button type="submit" disabled={!dirty || update.isPending}>
-                {update.isPending ? 'Saving…' : 'Save'}
-              </Button>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-    </Drawer>
-  );
+function lastActivity(t: Ticket) {
+  const last = t.replies.at(-1);
+  return { at: last?.at ?? t.createdAt, from: last?.from ?? 'patient' };
 }
 
 export function SupportTicketsPage() {
   const [status, setStatus] = useState<TicketStatus | ''>('open');
+  const [q, setQ] = useState('');
+  const [priority, setPriority] = useState<Priority | ''>('');
+  const [category, setCategory] = useState<Category | ''>('');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const list = useQuery({
-    queryKey: ['support-tickets', status, page],
-    queryFn: () => apiRequestWithMeta<Ticket[]>(`/admin/support/tickets${qs({ status, page, limit: 20 })}`),
+    queryKey: ['support-tickets', status, q.trim(), priority, category, page],
+    queryFn: () =>
+      apiRequestWithMeta<Ticket[]>(
+        `/admin/support/tickets${qs({ status, q: q.trim(), priority, category, page, limit: 20 })}`,
+      ),
     placeholderData: keepPreviousData,
   });
   const items = list.data?.data ?? [];
   const meta = list.data?.meta;
-  const selected = items.find((t) => t.id === selectedId) ?? null;
+  const filtered = Boolean(q.trim() || priority || category);
 
   return (
     <div>
       <PageHeader
         eyebrow="Operations / Support"
         title="Support tickets"
-        subtitle="Requests raised from Help & Support in the patient app. Set a status to keep the patient informed."
+        subtitle="Requests raised from Help & Support in the patient app. Replies reach the patient in the app, by push and by email."
       />
       <div className="mb-4">
         <Tabs
@@ -205,6 +69,48 @@ export function SupportTicketsPage() {
           ]}
         />
       </div>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <Input
+          aria-label="Search tickets"
+          placeholder="Search ticket ID, subject or message"
+          value={q}
+          onChange={(e) => {
+            setPage(1);
+            setQ(e.target.value);
+          }}
+          className="max-w-xs"
+        />
+        <Select
+          aria-label="Filter by priority"
+          value={priority}
+          onChange={(e) => {
+            setPage(1);
+            setPriority(e.target.value as Priority | '');
+          }}
+          className="max-w-[160px]"
+        >
+          <option value="">All priorities</option>
+          <option value="high">High</option>
+          <option value="normal">Normal</option>
+          <option value="low">Low</option>
+        </Select>
+        <Select
+          aria-label="Filter by category"
+          value={category}
+          onChange={(e) => {
+            setPage(1);
+            setCategory(e.target.value as Category | '');
+          }}
+          className="max-w-[170px]"
+        >
+          <option value="">All categories</option>
+          {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABEL[c]}
+            </option>
+          ))}
+        </Select>
+      </div>
       {list.isError ? <ErrorText>{(list.error as Error).message}</ErrorText> : null}
       <Table headers={HEADERS}>
         {list.isLoading ? (
@@ -215,53 +121,62 @@ export function SupportTicketsPage() {
           <TableMessage colSpan={HEADERS.length}>
             <EmptyState
               icon={<IconLifebuoy className="size-5" />}
-              title={status === 'open' ? 'No open tickets' : 'No tickets here'}
-              body="Tickets raised from the app appear here."
+              title={filtered ? 'No tickets match these filters' : status === 'open' ? 'No open tickets' : 'No tickets here'}
+              body={filtered ? 'Try clearing the search or filters.' : 'Tickets raised from the app appear here.'}
             />
           </TableMessage>
         ) : (
-          items.map((t) => (
-            <tr
-              key={t.id}
-              className={`cursor-pointer ${selectedId === t.id ? 'bg-[var(--brand-soft)]' : 'hover:bg-[#f8fafb]'}`}
-              onClick={() => setSelectedId(t.id)}
-            >
-              <td className="px-4 py-3 font-medium whitespace-nowrap">{t.ticketId}</td>
-              <td className="px-4 py-3 max-w-[320px]">
-                <div className="font-medium truncate">{t.subject}</div>
-                <div className="text-xs text-[var(--muted)] truncate">{t.message}</div>
-              </td>
-              <td className="px-4 py-3 capitalize">{t.category}</td>
-              <td className="px-4 py-3">
-                <StatusPill status={t.priority} />
-              </td>
-              <td className="px-4 py-3">
-                <StatusPill status={t.status} label={STATUS_LABEL[t.status]} />
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-[var(--muted)]" title={formatDateTime(t.createdAt)}>
-                {relativeTime(t.createdAt)}
-              </td>
-              <td className="px-4 py-3">
-                <button
-                  type="button"
-                  className="text-[var(--brand)] text-sm"
-                  aria-label={`Open ticket ${t.ticketId}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
+          items.map((t) => {
+            const last = lastActivity(t);
+            return (
+              <tr
+                key={t.id}
+                tabIndex={0}
+                aria-label={`Open ticket ${t.ticketId}: ${t.subject}`}
+                className={`cursor-pointer ${selectedId === t.id ? 'bg-[var(--brand-soft)]' : 'hover:bg-[#f8fafb]'}`}
+                onClick={() => setSelectedId(t.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
                     setSelectedId(t.id);
-                  }}
-                >
-                  Open
-                </button>
-              </td>
-            </tr>
-          ))
+                  }
+                }}
+              >
+                <td className="px-4 py-3 font-medium whitespace-nowrap">{t.ticketId}</td>
+                <td className="px-4 py-3">
+                  <div>{t.customer.name ?? '—'}</div>
+                  <div className="text-xs text-[var(--muted)] whitespace-nowrap">{t.customer.phone ?? ''}</div>
+                </td>
+                <td className="px-4 py-3 max-w-[300px]">
+                  <div className="font-medium truncate">{t.subject}</div>
+                  <div className="text-xs text-[var(--muted)] truncate">{t.replies.at(-1)?.body ?? t.message}</div>
+                </td>
+                <td className="px-4 py-3">{CATEGORY_LABEL[t.category]}</td>
+                <td className="px-4 py-3">
+                  <StatusPill status={t.priority} />
+                </td>
+                <td className="px-4 py-3">
+                  <StatusPill status={t.status} label={STATUS_LABEL[t.status]} />
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap" title={formatDateTime(last.at)}>
+                  <div className="text-[var(--muted)]">{relativeTime(last.at)}</div>
+                  <div className={`text-xs ${last.from === 'patient' ? 'text-[#b54708]' : 'text-[var(--muted)]'}`}>
+                    {last.from === 'patient' ? 'Waiting on us' : 'Replied'}
+                  </div>
+                </td>
+              </tr>
+            );
+          })
         )}
       </Table>
       {meta && meta.total > 0 ? (
         <Pagination page={meta.page} totalPages={meta.totalPages} total={meta.total} limit={meta.limit} onPage={setPage} />
       ) : null}
-      <TicketDrawer key={selected?.id ?? 'none'} ticket={selected} onClose={() => setSelectedId(null)} />
+      <TicketDrawer
+        ticketId={selectedId}
+        initial={items.find((t) => t.id === selectedId) ?? null}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
   );
 }
