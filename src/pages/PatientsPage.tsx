@@ -21,6 +21,7 @@ import { apiRequest, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { monthYear } from '../lib/format';
 import { can } from '../lib/roles';
+import { useDebounced } from '../lib/useDebounced';
 import { AccountStatusDialog, type StatusTarget } from './patients/AccountStatusDialog';
 import { AccountsTable } from './patients/AccountsTable';
 
@@ -45,10 +46,14 @@ function PatientsTable({ canWrite, onStatus }: { canWrite: boolean; onStatus: (a
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
+  // The API matches city exactly, so wait until typing stops before querying.
+  const cityQuery = useDebounced(city.trim());
+  const searchQuery = useDebounced(q.trim(), 250);
+
   const list = useQuery({
-    queryKey: ['ops-patients', q, city, status, page],
+    queryKey: ['ops-patients', searchQuery, cityQuery, status, page],
     queryFn: () =>
-      apiRequest<Page>(`/admin/patients${qs({ q: q.trim(), city: city.trim(), accountStatus: status, page, limit: 10 })}`),
+      apiRequest<Page>(`/admin/patients${qs({ q: searchQuery, city: cityQuery, accountStatus: status, page, limit: 10 })}`),
     placeholderData: keepPreviousData,
   });
   const data = list.data;
@@ -67,8 +72,9 @@ function PatientsTable({ canWrite, onStatus }: { canWrite: boolean; onStatus: (a
           className="max-w-xs"
         />
         <Input
-          aria-label="Filter by city"
-          placeholder="All cities"
+          aria-label="Filter by city (exact city name)"
+          placeholder="City (exact name)"
+          title="Matches the exact city name on the patient's default address, e.g. New Delhi"
           value={city}
           onChange={(e) => {
             setPage(1);

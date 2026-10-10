@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import { apiRequest, qs, type AdminUser } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { useDebounced } from '../../lib/useDebounced';
 import { formatDate, relativeTime, titleCase } from '../../lib/format';
 import type { StatusTarget } from './AccountStatusDialog';
 
@@ -26,6 +27,7 @@ const BACK_OFFICE = new Set(['root', 'admin', 'support', 'finance']);
 
 const ROLE_OPTIONS = [
   ['patient', 'Patient'],
+  ['user', 'Patient (legacy role)'],
   ['doctor', 'Doctor'],
   ['nurse', 'Caretaker'],
   ['clinic_admin', 'Clinic / hospital admin'],
@@ -33,6 +35,7 @@ const ROLE_OPTIONS = [
   ['pharmacy_admin', 'Pharmacy admin'],
   ['support', 'Support (team)'],
   ['finance', 'Finance (team)'],
+  ['admin', 'Ops admin (team)'],
   ['root', 'Super admin (team)'],
 ] as const;
 
@@ -46,10 +49,11 @@ export function AccountsTable({ canWrite, onStatus }: { canWrite: boolean; onSta
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
+  const search = useDebounced(q.trim(), 250);
   const list = useQuery({
-    queryKey: ['admin-users', q, role, status, page],
+    queryKey: ['admin-users', search, role, status, page],
     queryFn: () =>
-      apiRequest<Page>(`/admin/users${qs({ q: q.trim(), role, accountStatus: status, page, limit: 15 })}`),
+      apiRequest<Page>(`/admin/users${qs({ q: search, role, accountStatus: status, page, limit: 15 })}`),
     placeholderData: keepPreviousData,
   });
   const data = list.data;
@@ -119,7 +123,7 @@ export function AccountsTable({ canWrite, onStatus }: { canWrite: boolean; onSta
                   <div className="text-xs text-[var(--muted)]">{u.email ?? ''}</div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">{u.phone.startsWith('deleted:') ? '—' : u.phone}</td>
-                <td className="px-4 py-3">{titleCase(u.role === 'nurse' ? 'caretaker' : u.role)}</td>
+                <td className="px-4 py-3">{titleCase(u.role === 'nurse' ? 'caretaker' : u.role === 'user' ? 'patient' : u.role)}</td>
                 <td className="px-4 py-3">
                   <StatusPill status={u.accountStatus} />
                 </td>
