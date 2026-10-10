@@ -23,6 +23,7 @@ import { MessagesPage } from './pages/MessagesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SupportTicketsPage } from './pages/SupportTicketsPage';
 import { TeamPage } from './pages/TeamPage';
+import { VerificationPage } from './pages/VerificationPage';
 import {
   DiagnosticsConfigPage,
   DiscoveryConfigPage,
@@ -61,6 +62,7 @@ export default function App() {
                 <Route path="centres" element={<CentresPage />} />
                 <Route path="providers" element={<Navigate to="/providers/ambulance" replace />} />
                 <Route path="providers/:type" element={<ProvidersPage />} />
+                <Route path="verification" element={<VerificationPage />} />
                 <Route path="availability" element={<AvailabilityPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="patients" element={<PatientsPage />} />
