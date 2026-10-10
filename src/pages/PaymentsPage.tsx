@@ -19,9 +19,9 @@ import { apiRequestWithMeta, qs } from '../lib/api';
 import { downloadCsv } from '../lib/csv';
 import { formatDateTime, formatInr, formatInrCompact } from '../lib/format';
 import { PaymentDrawer } from './payments/PaymentDrawer';
-import { paymentPill, RESOURCE_LABEL, type Payment, type PaymentsMeta } from './payments/payment-types';
+import { paymentPill, RESOURCE_LABEL, serviceLabel, type Payment, type PaymentsMeta } from './payments/payment-types';
 
-const HEADERS = ['Receipt', 'Customer', 'For', 'Amount', 'Status', 'Created', ''];
+const HEADERS = ['Reference', 'Customer', 'Service', 'Amount', 'Status', 'Created', ''];
 const LIMIT = 25;
 
 export function PaymentsPage() {
@@ -58,11 +58,13 @@ export function PaymentsPage() {
   function exportPage() {
     downloadCsv(
       `payments-page-${meta?.page ?? 1}.csv`,
-      ['Receipt', 'Customer', 'Phone', 'For', 'Amount', 'Discount', 'Coupon', 'Status', 'Refunded', 'Refund status', 'Gateway order', 'Gateway payment', 'Created', 'Paid at'],
+      ['Receipt', 'Reference', 'Customer', 'Phone', 'Service', 'Type', 'Amount', 'Discount', 'Coupon', 'Status', 'Refunded', 'Refund status', 'Gateway order', 'Gateway payment', 'Created', 'Paid at'],
       items.map((p) => [
         p.receipt,
+        p.reference,
         p.customer.name,
         p.customer.phone,
+        serviceLabel(p),
         RESOURCE_LABEL[p.resourceType],
         p.amount,
         p.discountAmount,
@@ -127,7 +129,7 @@ export function PaymentsPage() {
       <div className="flex flex-wrap items-end gap-3 mb-4">
         <Input
           aria-label="Search payments"
-          placeholder="Receipt, Razorpay order or payment ID"
+          placeholder="Booking ID, customer, phone or Razorpay ID"
           value={q}
           onChange={(e) => resetPage(setQ)(e.target.value)}
           className="max-w-xs"
@@ -207,14 +209,17 @@ export function PaymentsPage() {
                 onClick={() => setSelectedId(p.id)}
               >
                 <td className="px-4 py-3">
-                  <div className="font-medium">{p.receipt}</div>
+                  <div className="font-medium whitespace-nowrap">{p.reference ?? p.receipt}</div>
                   <div className="text-xs text-[var(--muted)] font-mono">{p.gatewayPaymentId ?? p.gatewayOrderId}</div>
                 </td>
                 <td className="px-4 py-3">
                   <div>{p.customer.name ?? '—'}</div>
                   <div className="text-xs text-[var(--muted)]">{p.customer.phone ?? ''}</div>
                 </td>
-                <td className="px-4 py-3">{RESOURCE_LABEL[p.resourceType]}</td>
+                <td className="px-4 py-3 max-w-[260px]">
+                  <div className="truncate">{serviceLabel(p)}</div>
+                  <div className="text-xs text-[var(--muted)]">{RESOURCE_LABEL[p.resourceType]}</div>
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="font-medium tabular-nums">{formatInr(p.amount)}</div>
                   {p.discountAmount > 0 ? (

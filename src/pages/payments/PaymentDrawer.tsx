@@ -17,7 +17,7 @@ import { apiRequest } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatDateTime, formatInr } from '../../lib/format';
 import { can } from '../../lib/roles';
-import { isRefundable, paymentPill, RESOURCE_LABEL, type Payment } from './payment-types';
+import { isRefundable, paymentPill, RESOURCE_LABEL, serviceLabel, type Payment } from './payment-types';
 
 function RefundForm({ payment, onDone }: { payment: Payment; onDone: () => void }) {
   const qc = useQueryClient();
@@ -45,11 +45,7 @@ function RefundForm({ payment, onDone }: { payment: Payment; onDone: () => void 
           }),
         },
       ),
-    onSuccess: (result) => {
-      if (!result.refundStatus) {
-        setError('The gateway did not start a refund for this payment (no captured gateway payment ID).');
-        return;
-      }
+    onSuccess: () => {
       setConfirming(false);
       void qc.invalidateQueries({ queryKey: ['payments'] });
       void qc.invalidateQueries({ queryKey: ['ops-bookings'] });
@@ -163,7 +159,7 @@ export function PaymentDrawer({ payment, onClose }: { payment: Payment | null; o
     <Drawer
       open={Boolean(payment)}
       title={payment ? payment.receipt : 'Payment'}
-      subtitle={payment ? RESOURCE_LABEL[payment.resourceType] : undefined}
+      subtitle={payment ? serviceLabel(payment) : undefined}
       onClose={onClose}
     >
       {payment && pill ? (
@@ -184,17 +180,19 @@ export function PaymentDrawer({ payment, onClose }: { payment: Payment | null; o
               ) : null}
             </DetailRow>
             <DetailRow label="For">
-              {RESOURCE_LABEL[payment.resourceType]}
-              {payment.resourceType === 'appointment' ? (
-                <div>
-                  <Link
-                    to={`/bookings?booking=${payment.resourceId}`}
-                    className="text-xs font-normal text-[var(--brand)]"
-                  >
-                    Open booking
-                  </Link>
-                </div>
-              ) : null}
+              {serviceLabel(payment)}
+              <div className="text-xs font-normal text-[var(--muted)]">{RESOURCE_LABEL[payment.resourceType]}</div>
+            </DetailRow>
+            <DetailRow label="Reference">
+              {payment.reference ?? '—'}
+              <div>
+                <Link
+                  to={`/bookings?booking=${payment.resourceId}`}
+                  className="text-xs font-normal text-[var(--brand)]"
+                >
+                  Open booking
+                </Link>
+              </div>
             </DetailRow>
             {payment.discountAmount > 0 ? (
               <DetailRow label="Discount">
@@ -232,6 +230,11 @@ export function PaymentDrawer({ payment, onClose }: { payment: Payment | null; o
             <RefundForm key={payment.id} payment={payment} onDone={onClose} />
           ) : isRefundable(payment) ? (
             <p className="text-sm text-[var(--muted)]">Refunds need a Finance, Ops Admin or Super Admin role.</p>
+          ) : payment.status === 'paid' && !payment.refundStatus && !payment.gatewayPaymentId ? (
+            <p className="rounded-lg bg-[#fffaeb] px-3 py-2 text-sm text-[#b54708]">
+              This payment has no gateway payment ID, so it cannot be refunded from the console. Refund it from the
+              Razorpay dashboard instead.
+            </p>
           ) : null}
         </div>
       ) : null}

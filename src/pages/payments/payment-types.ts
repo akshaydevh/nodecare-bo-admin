@@ -3,6 +3,10 @@ export type Payment = {
   receipt: string;
   resourceType: 'appointment' | 'lab_booking' | 'pharmacy_order' | 'ambulance_booking';
   resourceId: string;
+  /** Booking / order ID of what was paid for. */
+  reference: string | null;
+  /** e.g. "Consultation · Dr. Rohan Mehta", "Lab test". */
+  serviceName: string | null;
   gateway: string;
   gatewayOrderId: string;
   gatewayPaymentId: string | null;
@@ -49,8 +53,13 @@ export const PAYMENT_STATUS_LABEL: Record<Payment['status'], string> = {
   refunded: 'Refunded',
 };
 
+/** Captured, not yet refunded, and has a gateway payment to refund against. */
 export function isRefundable(p: Payment) {
-  return p.status === 'paid' && !p.refundStatus;
+  return p.status === 'paid' && !p.refundStatus && Boolean(p.gatewayPaymentId);
+}
+
+export function serviceLabel(p: Payment) {
+  return p.serviceName ?? RESOURCE_LABEL[p.resourceType];
 }
 
 /** Status pill key: a paid payment with a pending refund reads as refund pending. */
