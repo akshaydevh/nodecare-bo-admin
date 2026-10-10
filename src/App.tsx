@@ -4,7 +4,9 @@ import { Shell } from './components/Shell';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AvailabilityPage } from './pages/AvailabilityPage';
 import { BookingsPage } from './pages/BookingsPage';
+import { BroadcastPage } from './pages/BroadcastPage';
 import { CentresPage } from './pages/CentresPage';
+import { CouponsPage } from './pages/CouponsPage';
 import { MedicalCentresPage } from './pages/MedicalCentresPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -64,6 +66,8 @@ export default function App() {
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="deletion-requests" element={<DeletionRequestsPage />} />
                 <Route path="payments" element={<PaymentsPage />} />
+                <Route path="coupons" element={<CouponsPage />} />
+                <Route path="broadcast" element={<BroadcastPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />
                 <Route path="messages" element={<MessagesPage />} />

@@ -21,11 +21,13 @@ import {
   IconLifebuoy,
   IconLogout,
   IconMail,
+  IconMegaphone,
   IconPharmacy,
   IconSearch,
   IconSettings,
   IconShield,
   IconStethoscope,
+  IconTag,
   IconUser,
   IconUserX,
   IconUsers,
@@ -100,7 +102,10 @@ const nav: {
   {
     label: 'Finance',
     collapsible: true,
-    items: [{ to: '/payments', label: 'Payments', icon: <IconCard className="size-4" /> }],
+    items: [
+      { to: '/payments', label: 'Payments', icon: <IconCard className="size-4" /> },
+      { to: '/coupons', label: 'Coupons', icon: <IconTag className="size-4" /> },
+    ],
   },
   {
     label: 'App Configuration',
@@ -112,6 +117,7 @@ const nav: {
       { to: '/app-config/pharmacy', label: 'Pharmacy', icon: <IconBuilding className="size-4" /> },
       { to: '/app-config/testimonials', label: 'Testimonials', icon: <IconUsers className="size-4" /> },
       { to: '/app-config/support', label: 'Patient Support', icon: <IconBell className="size-4" /> },
+      { to: '/broadcast', label: 'Broadcast', icon: <IconMegaphone className="size-4" /> },
     ],
   },
   {
