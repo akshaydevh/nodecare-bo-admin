@@ -160,6 +160,7 @@ export function VerificationPage() {
       setNotice(status === 'verified' ? `${row.name} is verified and visible to patients.` : `${row.name} was rejected.`);
       void qc.invalidateQueries({ queryKey: ['verification-queue', row.kind] });
       void qc.invalidateQueries({ queryKey: ['ops-dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['ops-summary'] });
     },
     onError: (err: Error) => setError(err.message),
   });

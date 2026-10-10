@@ -46,6 +46,8 @@ type Summary = {
   ambulancesActive: number;
   websiteMessages?: number;
   deletionRequests?: number;
+  pendingVerifications?: number;
+  openSupportTickets?: number;
   providers?: ProviderCounts;
 };
 
@@ -80,7 +82,13 @@ const nav: {
       { to: '/providers/ambulance', label: 'Ambulances', countKey: 'ambulance', icon: <IconAmbulance className="size-4" /> },
       { to: '/providers/pharmacy', label: 'Pharmacies', countKey: 'pharmacy', icon: <IconPharmacy className="size-4" /> },
       { to: '/providers/caretaker', label: 'Caretakers', countKey: 'caretaker', icon: <IconCaretaker className="size-4" /> },
-      { to: '/verification', label: 'Verification queue', icon: <IconBadgeCheck className="size-4" /> },
+      {
+        to: '/verification',
+        label: 'Verification queue',
+        countKey: 'pendingVerifications',
+        alert: true,
+        icon: <IconBadgeCheck className="size-4" />,
+      },
       { to: '/availability', label: 'Availability', icon: <IconCalendarClock className="size-4" /> },
     ],
   },
@@ -97,7 +105,13 @@ const nav: {
         alert: true,
         icon: <IconUserX className="size-4" />,
       },
-      { to: '/support', label: 'Support tickets', icon: <IconLifebuoy className="size-4" /> },
+      {
+        to: '/support',
+        label: 'Support tickets',
+        countKey: 'openSupportTickets',
+        alert: true,
+        icon: <IconLifebuoy className="size-4" />,
+      },
       { to: '/reports', label: 'Reports & Sales', icon: <IconBarChart className="size-4" /> },
       { to: '/messages', label: 'Website messages', countKey: 'websiteMessages', icon: <IconMail className="size-4" /> },
     ],
@@ -237,7 +251,7 @@ function NavGroup({
                 className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
                   item.alert ? 'bg-[#f79009] font-semibold text-white' : 'bg-white/10 text-white/70'
                 }`}
-                aria-label={item.alert ? `${count} pending` : undefined}
+                aria-label={item.alert ? `${count} need attention` : undefined}
               >
                 {count}
               </span>
