@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { IconCalendar } from '../components/icons';
+import { IconCalendar, IconDownload } from '../components/icons';
 import {
   Button,
   EmptyState,
@@ -17,6 +17,8 @@ import {
   Tabs,
 } from '../components/ui';
 import { apiDownloadCsv, apiRequest, qs } from '../lib/api';
+import { useAuth } from '../lib/auth';
+import { can } from '../lib/roles';
 import { formatDateTime, formatInr, relativeFromNow } from '../lib/format';
 import { BookingDetailDrawer } from './bookings/BookingDetailDrawer';
 import {
@@ -48,6 +50,8 @@ type Page = { items: Booking[]; total: number; page: number; totalPages: number;
 const HEADERS = ['Booking ID', 'Patient', 'Service', 'Provider', 'Date & time', 'Amount', 'Status', ''];
 
 export function BookingsPage() {
+  const { user } = useAuth();
+  const canExport = can(user?.role, 'bookings');
   const [service, setService] = useState<BookingService | ''>('');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
@@ -85,18 +89,22 @@ export function BookingsPage() {
         title="Bookings"
         subtitle="Every booking across doctor, diagnostic, pharmacy, ambulance and caretaker services. Visits start as requests and wait for the provider to accept."
         action={
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setExportError('');
-              apiDownloadCsv(
-                `/admin/bookings/export${qs({ service: service || undefined, q, status, range })}`,
-                'bookings.csv',
-              ).catch((err: Error) => setExportError(err.message));
-            }}
-          >
-            Export
-          </Button>
+          canExport ? (
+            <Button
+              variant="ghost"
+              title="The export contains at most the 100 most recent bookings matching these filters"
+              onClick={() => {
+                setExportError('');
+                apiDownloadCsv(
+                  `/admin/bookings/export${qs({ service: service || undefined, q, status, range })}`,
+                  'bookings.csv',
+                ).catch((err: Error) => setExportError(err.message));
+              }}
+            >
+              <IconDownload className="size-4" />
+              Export latest 100
+            </Button>
+          ) : null
         }
       />
       <ErrorText>{exportError}</ErrorText>

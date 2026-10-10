@@ -164,6 +164,7 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
       void qc.invalidateQueries({ queryKey: ['ops-bookings'] });
       void qc.invalidateQueries({ queryKey: ['ops-booking', bookingId] });
       void qc.invalidateQueries({ queryKey: ['ops-summary'] });
+      void qc.invalidateQueries({ queryKey: ['payments'] });
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -178,6 +179,13 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
   const d = detail.data;
   const appointment = d ? isAppointmentService(d.service) : false;
   const mode = d ? paymentModeLabel(d.payment.mode ?? d.paymentMode) : null;
+  const paidMode = d ? (d.payment.mode ?? d.paymentMode) : null;
+  const refundNote =
+    d && d.payment.status === 'paid'
+      ? paidMode === 'pay_at_clinic'
+        ? 'This was paid at the clinic, so any refund must be settled there.'
+        : `The patient will be refunded ${formatInr(d.payment.amount)} in full automatically.`
+      : null;
   const cancellable = d ? !isTerminalStatus(d.status) && can(user?.role, 'bookings') : false;
 
   return (
@@ -275,14 +283,13 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
         open={confirming}
         title={`Cancel ${d?.bookingId ?? 'booking'}?`}
         message={
-          appointment ? (
-            <>
-              The slot is released, the patient and provider are notified, and any prepaid amount is refunded in full.
-              This cannot be undone.
-            </>
-          ) : (
-            <>The booking is marked cancelled and the patient sees the reason below. This cannot be undone.</>
-          )
+          <>
+            {appointment
+              ? 'The slot is released and the patient and provider are notified.'
+              : 'The booking is marked cancelled and the patient sees the reason below.'}{' '}
+            {refundNote ? <span className="font-medium text-[var(--ink)]">{refundNote}</span> : null} This cannot be
+            undone.
+          </>
         }
         confirmLabel="Cancel booking"
         busyLabel="Cancelling…"
