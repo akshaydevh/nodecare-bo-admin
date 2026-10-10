@@ -17,7 +17,7 @@ import {
 } from '../components/ui';
 import { apiRequestWithMeta, qs } from '../lib/api';
 import { downloadCsv } from '../lib/csv';
-import { formatDateTime, formatInr, formatInrCompact } from '../lib/format';
+import { formatDateTime, formatInr, formatInrCompact, formatInrExact, istDateTimeString } from '../lib/format';
 import { PaymentDrawer } from './payments/PaymentDrawer';
 import { paymentPill, RESOURCE_LABEL, serviceLabel, type Payment, type PaymentsMeta } from './payments/payment-types';
 
@@ -58,7 +58,7 @@ export function PaymentsPage() {
   function exportPage() {
     downloadCsv(
       `payments-page-${meta?.page ?? 1}.csv`,
-      ['Receipt', 'Reference', 'Customer', 'Phone', 'Service', 'Type', 'Amount', 'Discount', 'Coupon', 'Status', 'Refunded', 'Refund status', 'Gateway order', 'Gateway payment', 'Created', 'Paid at'],
+      ['Receipt', 'Reference', 'Customer', 'Phone', 'Service', 'Type', 'Amount', 'Discount', 'Coupon', 'Status', 'Refunded', 'Refund status', 'Gateway order', 'Gateway payment', 'Created (IST)', 'Paid at (IST)'],
       items.map((p) => [
         p.receipt,
         p.reference,
@@ -74,8 +74,8 @@ export function PaymentsPage() {
         p.refundStatus,
         p.gatewayOrderId,
         p.gatewayPaymentId,
-        p.createdAt,
-        p.paidAt,
+        istDateTimeString(p.createdAt),
+        istDateTimeString(p.paidAt),
       ]),
     );
   }
@@ -221,14 +221,14 @@ export function PaymentsPage() {
                   <div className="text-xs text-[var(--muted)]">{RESOURCE_LABEL[p.resourceType]}</div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="font-medium tabular-nums">{formatInr(p.amount)}</div>
+                  <div className="font-medium tabular-nums">{formatInrExact(p.amount)}</div>
                   {p.discountAmount > 0 ? (
                     <div className="text-xs text-[var(--muted)]">
                       −{formatInr(p.discountAmount)} {p.couponCode ?? ''}
                     </div>
                   ) : null}
                   {p.refundAmount ? (
-                    <div className="text-xs text-[#5925dc]">Refund {formatInr(p.refundAmount)}</div>
+                    <div className="text-xs text-[#5925dc]">Refund {formatInrExact(p.refundAmount)}</div>
                   ) : null}
                 </td>
                 <td className="px-4 py-3">

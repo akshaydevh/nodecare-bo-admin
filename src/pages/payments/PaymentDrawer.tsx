@@ -15,7 +15,7 @@ import {
 } from '../../components/ui';
 import { apiRequest } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { formatDateTime, formatInr } from '../../lib/format';
+import { formatDateTime, formatInrExact as formatInr } from '../../lib/format';
 import { can } from '../../lib/roles';
 import { isRefundable, paymentPill, RESOURCE_LABEL, serviceLabel, type Payment } from './payment-types';
 
@@ -29,8 +29,10 @@ function RefundForm({ payment, onDone }: { payment: Payment; onDone: () => void 
 
   const partialAmount = Number(amount);
   const refundAmount = kind === 'full' ? payment.amount : partialAmount;
+  // Partial refunds: at least ₹1, at most the amount paid, and no fractions of a paisa.
   const amountValid =
-    kind === 'full' || (Number.isFinite(partialAmount) && partialAmount > 0 && partialAmount <= payment.amount);
+    kind === 'full' ||
+    (/^\d+(\.\d{1,2})?$/.test(amount.trim()) && partialAmount >= 1 && partialAmount <= payment.amount);
   const reasonValid = reason.trim().length >= 3;
 
   const refund = useMutation({
@@ -105,7 +107,9 @@ function RefundForm({ payment, onDone }: { payment: Payment; onDone: () => void 
             required
           />
           {amount && !amountValid ? (
-            <ErrorText>Enter an amount between ₹1 and {formatInr(payment.amount)}.</ErrorText>
+            <ErrorText>
+              Enter an amount between ₹1 and {formatInr(payment.amount)}, with at most two decimal places.
+            </ErrorText>
           ) : null}
         </div>
       ) : null}

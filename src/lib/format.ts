@@ -94,3 +94,29 @@ export function relativeFromNow(iso: string | Date) {
 export function titleCase(value: string) {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** Rupees with paise when the amount is not whole (₹1,250 or ₹1,250.50). */
+export function formatInrExact(value: number) {
+  const whole = Math.abs(value - Math.round(value)) < 0.005;
+  return `₹${value.toLocaleString('en-IN', {
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  })}`;
+}
+
+/** Spreadsheet-friendly IST timestamp: "2026-10-10 16:55:35". */
+export function istDateTimeString(iso: string | Date | null | undefined) {
+  if (!iso) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
+}
