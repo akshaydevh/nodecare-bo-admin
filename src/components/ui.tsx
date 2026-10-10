@@ -1,3 +1,4 @@
+import { useEffect, useId } from 'react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 export function PageHeader({
@@ -156,64 +157,102 @@ export function Avatar({
   );
 }
 
-export function StatusPill({
-  status,
-}: {
-  status: string;
-}) {
-  const key = status.toLowerCase().replace(/_/g, ' ');
-  const map: Record<string, string> = {
-    pending: 'bg-[#fffaeb] text-[#b54708]',
-    invited: 'bg-[#f2f4f7] text-[#475467]',
-    verified: 'bg-[#ecfdf3] text-[#067647]',
-    active: 'bg-[#ecfdf3] text-[#067647]',
-    completed: 'bg-[#ecfdf3] text-[#067647]',
-    confirmed: 'bg-[#eff8ff] text-[#175cd3]',
-    scheduled: 'bg-[#eff8ff] text-[#175cd3]',
-    'in progress': 'bg-[#fffaeb] text-[#b54708]',
-    'en route': 'bg-[#fffaeb] text-[#b54708]',
-    packing: 'bg-[#fffaeb] text-[#b54708]',
-    dispatched: 'bg-[#fffaeb] text-[#b54708]',
-    suspended: 'bg-[#fef3f2] text-[#b42318]',
-    cancelled: 'bg-[#f2f4f7] text-[#475467]',
-    offline: 'bg-[#f2f4f7] text-[#475467]',
-    available: 'bg-[#ecfdf3] text-[#067647]',
-    'on trip': 'bg-[#fef3f2] text-[#b42318]',
-    'needs review': 'bg-[#fef3f2] text-[#b42318]',
-    new: 'bg-[#fffaeb] text-[#b54708]',
-    replied: 'bg-[#ecfdf3] text-[#067647]',
-  };
-  const dot =
-    key === 'verified' || key === 'active' || key === 'available' || key === 'completed' || key === 'replied'
-      ? 'bg-[#12b76a]'
-      : key === 'pending' || key === 'on trip' || key === 'en route' || key === 'new'
-        ? 'bg-[#f79009]'
-        : key === 'suspended' || key === 'cancelled'
-          ? 'bg-[#f04438]'
-          : 'bg-[#98a2b3]';
+type Tone = 'green' | 'blue' | 'amber' | 'red' | 'gray' | 'purple';
+
+const TONE_PILL: Record<Tone, string> = {
+  green: 'bg-[#ecfdf3] text-[#067647]',
+  blue: 'bg-[#eff8ff] text-[#175cd3]',
+  amber: 'bg-[#fffaeb] text-[#b54708]',
+  red: 'bg-[#fef3f2] text-[#b42318]',
+  gray: 'bg-[#f2f4f7] text-[#475467]',
+  purple: 'bg-[#f4f3ff] text-[#5925dc]',
+};
+
+const TONE_DOT: Record<Tone, string> = {
+  green: 'bg-[#12b76a]',
+  blue: 'bg-[#2e90fa]',
+  amber: 'bg-[#f79009]',
+  red: 'bg-[#f04438]',
+  gray: 'bg-[#98a2b3]',
+  purple: 'bg-[#7a5af8]',
+};
+
+const STATUS_TONE: Record<string, Tone> = {
+  pending: 'amber',
+  invited: 'gray',
+  verified: 'green',
+  active: 'green',
+  completed: 'green',
+  confirmed: 'blue',
+  scheduled: 'blue',
+  'in progress': 'amber',
+  'en route': 'amber',
+  packing: 'amber',
+  dispatched: 'amber',
+  suspended: 'red',
+  cancelled: 'gray',
+  offline: 'gray',
+  available: 'green',
+  'on trip': 'red',
+  'needs review': 'red',
+  new: 'amber',
+  replied: 'green',
+  // Appointment lifecycle
+  'awaiting provider': 'amber',
+  rejected: 'red',
+  expired: 'gray',
+  'no show': 'red',
+  // Other services
+  requested: 'amber',
+  assigned: 'blue',
+  arrived: 'blue',
+  placed: 'amber',
+  'prescription review': 'amber',
+  'sample collected': 'blue',
+  processing: 'blue',
+  'report ready': 'green',
+  delivered: 'green',
+  // Payments
+  paid: 'green',
+  created: 'amber',
+  failed: 'red',
+  refunded: 'purple',
+  'partially refunded': 'purple',
+  'not required': 'gray',
+  // Support / accounts / misc
+  open: 'amber',
+  resolved: 'green',
+  closed: 'gray',
+  deleted: 'gray',
+  inactive: 'gray',
+  booked: 'blue',
+  blocked: 'gray',
+  held: 'amber',
+  high: 'red',
+  normal: 'gray',
+  low: 'gray',
+};
+
+function toneFor(status: string): Tone {
+  return STATUS_TONE[status.toLowerCase().replace(/_/g, ' ')] ?? 'gray';
+}
+
+export function StatusPill({ status, label }: { status: string; label?: string }) {
+  const tone = toneFor(status);
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${map[key] ?? 'bg-[#f2f4f7] text-[#475467]'}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${TONE_PILL[tone]}`}
     >
-      <span className={`size-1.5 rounded-full ${dot}`} />
-      {status.replace(/_/g, ' ')}
+      <span className={`size-1.5 rounded-full ${TONE_DOT[tone]}`} />
+      {label ?? status.replace(/_/g, ' ')}
     </span>
   );
 }
 
 export function StatusDot({ status, label }: { status: string; label?: string }) {
-  const key = status.toLowerCase().replace(/_/g, ' ');
-  const color =
-    key === 'verified' || key === 'active' || key === 'available' || key === 'completed'
-      ? 'bg-[#12b76a]'
-      : key === 'pending' || key === 'on trip' || key === 'en route'
-        ? 'bg-[#f79009]'
-        : key === 'suspended' || key === 'cancelled'
-          ? 'bg-[#f04438]'
-          : 'bg-[#98a2b3]';
   return (
     <span className="inline-flex items-center gap-1.5 text-sm">
-      <span className={`size-1.5 rounded-full ${color}`} />
+      <span className={`size-1.5 rounded-full ${TONE_DOT[toneFor(status)]}`} />
       {label ?? status.replace(/_/g, ' ')}
     </span>
   );
@@ -299,25 +338,57 @@ export function Tabs({
   );
 }
 
+function useEscape(open: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+}
+
 export function Drawer({
   open,
   title,
+  subtitle,
   onClose,
   children,
+  size = 'md',
 }: {
   open: boolean;
   title: string;
+  subtitle?: ReactNode;
   onClose: () => void;
   children: ReactNode;
+  size?: 'md' | 'lg';
 }) {
+  const titleId = useId();
+  useEscape(open, onClose);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <button type="button" className="flex-1 bg-black/20" aria-label="Close" onClick={onClose} />
-      <aside className="w-full max-w-md bg-white h-full shadow-xl overflow-y-auto p-6">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`w-full ${size === 'lg' ? 'max-w-xl' : 'max-w-md'} bg-white h-full shadow-xl overflow-y-auto p-6`}
+      >
         <div className="flex items-start justify-between gap-3 mb-5">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="text-[var(--muted)] text-xl leading-none">
+          <div className="min-w-0">
+            <h2 id={titleId} className="text-lg font-semibold">
+              {title}
+            </h2>
+            {subtitle ? <div className="text-sm text-[var(--muted)] mt-0.5">{subtitle}</div> : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[var(--muted)] text-xl leading-none"
+            aria-label="Close panel"
+          >
             ×
           </button>
         </div>
@@ -342,14 +413,21 @@ export function Modal({
   size?: 'md' | 'lg';
   zClass?: string;
 }) {
+  const titleId = useId();
+  useEscape(open, onClose);
   if (!open) return null;
   return (
     <div className={`fixed inset-0 ${zClass} grid place-items-center bg-black/30 p-4`}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={`w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] bg-white rounded-xl shadow-xl flex flex-col overflow-hidden`}
       >
         <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4 shrink-0 bg-white border-b border-[var(--line)]">
-          <h2 className="text-lg font-semibold pr-4">{title}</h2>
+          <h2 id={titleId} className="text-lg font-semibold pr-4">
+            {title}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -361,6 +439,134 @@ export function Modal({
         </div>
         <div className="px-6 py-4 overflow-y-auto min-h-0">{children}</div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Confirmation step for consequential actions. Children render between the
+ * message and the buttons (e.g. a reason field).
+ */
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel,
+  busyLabel,
+  tone = 'danger',
+  busy = false,
+  disabled = false,
+  error,
+  onConfirm,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  message: ReactNode;
+  confirmLabel: string;
+  busyLabel?: string;
+  tone?: 'danger' | 'primary';
+  busy?: boolean;
+  disabled?: boolean;
+  error?: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  children?: ReactNode;
+}) {
+  return (
+    <Modal open={open} title={title} onClose={busy ? () => undefined : onClose} zClass="z-[60]">
+      <div className="space-y-4">
+        <div className="text-sm text-[var(--muted)] leading-relaxed">{message}</div>
+        {children}
+        <ErrorText>{error}</ErrorText>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant={tone === 'danger' ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            disabled={busy || disabled}
+          >
+            {busy ? (busyLabel ?? 'Working…') : confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+export function EmptyState({
+  title,
+  body,
+  icon,
+  action,
+}: {
+  title: string;
+  body?: ReactNode;
+  icon?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center px-6 py-12">
+      {icon ? (
+        <span className="mb-3 inline-flex size-11 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
+          {icon}
+        </span>
+      ) : null}
+      <div className="text-sm font-semibold text-[var(--ink)]">{title}</div>
+      {body ? <p className="mt-1 max-w-sm text-sm text-[var(--muted)]">{body}</p> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
+    </div>
+  );
+}
+
+/** Placeholder bars shown while a list loads. */
+export function SkeletonRows({ rows = 4, className = 'h-12' }: { rows?: number; className?: string }) {
+  return (
+    <div className="space-y-2 p-3" aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className={`animate-pulse rounded-lg bg-[#eef1f4] ${className}`} />
+      ))}
+    </div>
+  );
+}
+
+export function TableMessage({ colSpan, children }: { colSpan: number; children: ReactNode }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="p-0">
+        {children}
+      </td>
+    </tr>
+  );
+}
+
+export function FieldLabel({ htmlFor, children, hint }: { htmlFor?: string; children: ReactNode; hint?: ReactNode }) {
+  return (
+    <label htmlFor={htmlFor} className="block text-xs font-semibold text-[var(--muted)] mb-1">
+      {children}
+      {hint ? <span className="ml-1 font-normal">{hint}</span> : null}
+    </label>
+  );
+}
+
+export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-3">
+      <h2 className="text-[15px] font-semibold text-[var(--ink)]">{children}</h2>
+      {action}
+    </div>
+  );
+}
+
+export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2 text-sm">
+      <span className="text-[var(--muted)] shrink-0">{label}</span>
+      <span className="text-right font-medium text-[var(--ink)] min-w-0 break-words">{children}</span>
     </div>
   );
 }

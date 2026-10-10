@@ -46,3 +46,51 @@ export function signedPct(n: number) {
   const sign = n > 0 ? '+' : '';
   return `${sign}${n.toFixed(1)}%`;
 }
+
+export function formatDateTime(iso: string | Date | null | undefined) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  });
+}
+
+export function formatDate(iso: string | Date | null | undefined) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  });
+}
+
+/** Today's (or the given instant's) calendar date in IST as YYYY-MM-DD. */
+export function istDateString(d: Date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+}
+
+/** "in 2 hours" / "3 minutes ago" relative to now. */
+export function relativeFromNow(iso: string | Date) {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return relativeTime(iso);
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `in ${mins} minute${mins === 1 ? '' : 's'}`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+  const days = Math.round(hours / 24);
+  return `in ${days} day${days === 1 ? '' : 's'}`;
+}
+
+export function titleCase(value: string) {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}

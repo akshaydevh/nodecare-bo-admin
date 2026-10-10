@@ -1,4 +1,15 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+const CONFIGURED_API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+
+/**
+ * Production builds must be pointed at an API explicitly; silently falling back
+ * to localhost would make a misconfigured deploy look like an outage.
+ */
+export const API_CONFIG_ERROR: string | null =
+  import.meta.env.PROD && !CONFIGURED_API_BASE
+    ? 'VITE_API_BASE_URL is not set for this build. Set it in the hosting environment (for example https://api.example.com/api/v1) and redeploy.'
+    : null;
+
+const API_BASE = (CONFIGURED_API_BASE || 'http://localhost:3000/api/v1').replace(/\/+$/, '');
 
 export type AdminUser = {
   id: string;
@@ -17,7 +28,16 @@ export type AdminUser = {
 type ApiSuccess<T> = {
   success: true;
   data: T;
+  meta?: Record<string, unknown>;
   requestId: string;
+};
+
+/** Standard pagination meta returned alongside list payloads. */
+export type PageMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
 type ApiFailure = {
@@ -164,12 +184,13 @@ function toApiError(res: Response, json: ApiFailure | null): ApiError {
   return new ApiError(res.status, res.status === 401 ? 'UNAUTHORIZED' : 'UNKNOWN', res.statusText || 'Request failed');
 }
 
-async function requestJson<T>(
+async function requestEnvelope<T>(
   path: string,
   options: RequestInit,
   auth: boolean,
   retried = false,
-): Promise<T> {
+): Promise<ApiSuccess<T>> {
+  if (API_CONFIG_ERROR) throw new ApiError(0, 'CONFIG_ERROR', API_CONFIG_ERROR);
   const headers = new Headers(options.headers);
   if (!headers.has('Content-Type') && options.body !== undefined) {
     headers.set('Content-Type', 'application/json');
@@ -186,14 +207,18 @@ async function requestJson<T>(
     const error = toApiError(res, json && !json.success ? json : null);
     if (!retried) {
       const recovered = await recoverOrExpire(path, auth, error);
-      if (recovered) return requestJson<T>(path, options, auth, true);
+      if (recovered) return requestEnvelope<T>(path, options, auth, true);
     } else if (canRecoverSession(path, auth) && isAuthFailure(error.status, error.code)) {
       expireSession();
     }
     throw error;
   }
 
-  return json.data;
+  return json;
+}
+
+async function requestJson<T>(path: string, options: RequestInit, auth: boolean): Promise<T> {
+  return (await requestEnvelope<T>(path, options, auth)).data;
 }
 
 export async function apiRequest<T>(
@@ -202,6 +227,15 @@ export async function apiRequest<T>(
   auth = true,
 ): Promise<T> {
   return requestJson<T>(path, options, auth);
+}
+
+/** Like apiRequest, but also returns the envelope's `meta` (pagination, summaries). */
+export async function apiRequestWithMeta<T, M = PageMeta>(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ data: T; meta: M }> {
+  const json = await requestEnvelope<T>(path, options, true);
+  return { data: json.data, meta: (json.meta ?? {}) as M };
 }
 
 export async function apiUploadBinary<T>(path: string, body: Blob, contentType: string): Promise<T> {
@@ -217,6 +251,7 @@ export async function apiUploadBinary<T>(path: string, body: Blob, contentType: 
 }
 
 export async function apiDownloadCsv(path: string, filename: string) {
+  if (API_CONFIG_ERROR) throw new ApiError(0, 'CONFIG_ERROR', API_CONFIG_ERROR);
   const run = async () => {
     const headers = new Headers();
     const { accessToken } = getStoredTokens();

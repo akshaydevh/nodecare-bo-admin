@@ -258,3 +258,96 @@ export function IconCaretaker({ className }: IconProps) {
     </Icon>
   );
 }
+
+export function IconCard({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 10h18M7 15h3" />
+    </Icon>
+  );
+}
+
+export function IconTag({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l9 9-9 9-9-9z" />
+      <circle cx="8" cy="8" r="1.5" />
+    </Icon>
+  );
+}
+
+export function IconMegaphone({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z" />
+      <path d="M16 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" />
+    </Icon>
+  );
+}
+
+export function IconLifebuoy({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M5.6 5.6l4 4M14.4 14.4l4 4M18.4 5.6l-4 4M9.6 14.4l-4 4" />
+    </Icon>
+  );
+}
+
+export function IconBadgeCheck({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 3l2.4 1.8 3 .1.9 2.8 2.4 1.8-.9 2.8.9 2.8-2.4 1.8-.9 2.8-3 .1L12 21l-2.4-1.8-3-.1-.9-2.8L3.3 14.5l.9-2.8-.9-2.8 2.4-1.8.9-2.8 3-.1z" />
+      <path d="M8.5 12l2.5 2.5 4.5-5" />
+    </Icon>
+  );
+}
+
+export function IconCalendarClock({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M21 10V6.5A2 2 0 0 0 19 4.5H5a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h5.5" />
+      <path d="M3 9.5h18M8 3v3M16 3v3" />
+      <circle cx="17" cy="17" r="4" />
+      <path d="M17 15.5V17l1 1" />
+    </Icon>
+  );
+}
+
+export function IconUserX({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="10" cy="8" r="3.5" />
+      <path d="M3.5 20a6.5 6.5 0 0 1 11.5-4.2" />
+      <path d="M17 15l4 4M21 15l-4 4" />
+    </Icon>
+  );
+}
+
+export function IconDownload({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+      <path d="M4 19h16" />
+    </Icon>
+  );
+}
+
+export function IconAlert({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 3.5 2.5 20h19L12 3.5z" />
+      <path d="M12 10v4.5M12 17.5v.01" />
+    </Icon>
+  );
+}
+
+export function IconPlus({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}
