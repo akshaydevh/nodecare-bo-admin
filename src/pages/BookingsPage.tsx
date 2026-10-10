@@ -22,6 +22,7 @@ import { BookingDetailDrawer } from './bookings/BookingDetailDrawer';
 import {
   bookingStatusLabel,
   bookingStatusTone,
+  isAppointmentService,
   paymentStatusLabel,
   statusGroupsFor,
   type BookingService,
@@ -37,6 +38,9 @@ type Booking = {
   amount: number;
   status: string;
   paymentStatus: string;
+  paymentMode?: string | null;
+  respondBy?: string | null;
+  createdAt?: string | null;
 };
 
 type Page = { items: Booking[]; total: number; page: number; totalPages: number; limit: number };
@@ -201,13 +205,29 @@ export function BookingsPage() {
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <div>{formatInr(row.amount)}</div>
-                <div className="text-xs text-[var(--muted)] capitalize">{paymentStatusLabel(row.paymentStatus)}</div>
+                <div className="text-xs text-[var(--muted)]">
+                  {row.paymentMode === 'pay_at_clinic' && row.paymentStatus !== 'paid'
+                    ? 'Pay at clinic'
+                    : `${row.paymentMode === 'online' ? 'Online · ' : ''}${paymentStatusLabel(row.paymentStatus)}`}
+                </div>
               </td>
               <td className="px-4 py-3">
                 <StatusPill
                   status={bookingStatusTone(row.service, row.status)}
                   label={bookingStatusLabel(row.service, row.status)}
                 />
+                {row.status === 'pending' && isAppointmentService(row.service) && row.respondBy ? (
+                  <div
+                    className={`mt-1 text-xs whitespace-nowrap ${
+                      new Date(row.respondBy).getTime() - Date.now() < 30 * 60_000 ? 'text-[#b54708] font-medium' : 'text-[var(--muted)]'
+                    }`}
+                    title={`Respond by ${formatDateTime(row.respondBy)}`}
+                  >
+                    {new Date(row.respondBy).getTime() <= Date.now()
+                      ? 'Response overdue'
+                      : `Respond ${relativeFromNow(row.respondBy)}`}
+                  </div>
+                ) : null}
               </td>
               <td className="px-4 py-3">
                 <button

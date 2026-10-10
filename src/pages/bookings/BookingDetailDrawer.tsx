@@ -26,18 +26,17 @@ import {
 } from './booking-status';
 
 /**
- * The admin detail endpoint returns a derived 3-step timeline ({key,label,at,state}).
- * Appointment serializers expose a real status history ({status,label,at,by,note});
- * both shapes are accepted so the drawer picks up richer data when available.
+ * Timeline steps from GET /admin/bookings/:id. For doctor/caretaker visits they
+ * come from the appointment's status history; other services send their own
+ * fulfilment steps (which may use `skipped`).
  */
-type ApiTimelineEntry = {
-  key?: string;
-  status?: string;
+type ApiStep = {
+  key: string;
   label: string;
   at: string | null;
-  state?: string;
   by?: string | null;
   note?: string | null;
+  state: 'done' | 'current' | 'pending' | 'skipped';
 };
 
 export type BookingDetail = {
@@ -47,6 +46,7 @@ export type BookingDetail = {
   patientName: string;
   providerName: string;
   scheduledAt: string;
+  createdAt?: string | null;
   amount: number;
   status: string;
   paymentStatus: string;
@@ -57,16 +57,16 @@ export type BookingDetail = {
   collectionAddress?: string | null;
   deliveryAddress?: string | null;
   items?: { name?: string; quantity?: number; price?: number }[];
-  timeline: ApiTimelineEntry[];
-  payment: { amount: number; status: string; mode?: string | null };
+  timeline: ApiStep[];
+  payment: { amount: number; status: string; mode?: string | null; channel?: string | null };
   cancelReason?: string | null;
+  cancelledBy?: string | null;
   rejectReason?: string | null;
   respondBy?: string | null;
   paymentMode?: string | null;
 };
 
-type StepState = 'done' | 'current' | 'pending' | 'failed' | 'skipped';
-type Step = { key: string; label: string; at: string | null; state: StepState; note?: string | null };
+type StepState = ApiStep['state'] | 'failed';
 
 const DOT: Record<StepState, string> = {
   done: 'bg-[var(--brand)]',
@@ -76,119 +76,64 @@ const DOT: Record<StepState, string> = {
   skipped: 'bg-[#d0d5dd]',
 };
 
-function appointmentSteps(d: BookingDetail): Step[] {
-  // Real status history from the lifecycle, when the API provides it.
-  if (d.timeline.some((t) => t.status)) {
-    const steps: Step[] = d.timeline.map((t, i) => ({
-      key: `${t.status}-${i}`,
-      label: t.label,
-      at: t.at,
-      note: t.note,
-      state: ['rejected', 'expired', 'cancelled', 'no_show'].includes(t.status ?? '') ? 'failed' : 'done',
-    }));
-    if (d.status === 'pending') {
-      steps.push({ key: 'awaiting', label: 'Awaiting provider response', at: null, state: 'current' });
-    }
-    return steps;
-  }
+const NEGATIVE_STEP = /^(rejected|expired|cancelled|no_show)\b/;
 
-  const requestedAt = d.timeline.find((t) => t.key === 'requested')?.at ?? null;
-  const confirmedAt = d.timeline.find((t) => t.key === 'confirmed')?.at ?? null;
-  const completedAt = d.timeline.find((t) => t.key === 'completed')?.at ?? null;
-  const visit = d.service === 'caretaker' ? 'Visit' : 'Consultation';
-  const requested: Step = { key: 'requested', label: 'Booking requested', at: requestedAt, state: 'done' };
-  const accepted: Step = {
-    key: 'accepted',
-    label: `Accepted by ${d.providerName}`,
-    at: confirmedAt,
-    state: 'done',
-  };
-  const scheduled: Step = {
-    key: 'visit',
-    label: `${visit} scheduled`,
-    at: d.scheduledAt,
-    state: 'pending',
-  };
-
-  switch (d.status) {
-    case 'pending':
-      return [
-        requested,
-        {
-          key: 'awaiting',
-          label: `Awaiting response from ${d.providerName}`,
-          at: null,
-          state: 'current',
-          note: d.respondBy
-            ? `Respond by ${formatDateTime(d.respondBy)} (${relativeFromNow(d.respondBy)}) or it expires`
-            : 'Unanswered requests expire automatically',
-        },
-        scheduled,
-      ];
-    case 'confirmed':
-      return [requested, accepted, scheduled];
-    case 'rejected':
-      return [
-        requested,
-        { key: 'rejected', label: `Declined by ${d.providerName}`, at: null, state: 'failed', note: d.rejectReason },
-      ];
-    case 'expired':
-      return [
-        requested,
-        { key: 'expired', label: 'Request expired', at: null, state: 'failed', note: 'Provider did not respond in time' },
-      ];
-    case 'completed':
-      return [requested, accepted, { key: 'completed', label: `${visit} completed`, at: completedAt, state: 'done' }];
-    case 'no_show':
-      return [requested, accepted, { key: 'no_show', label: 'Patient did not show up', at: null, state: 'failed' }];
-    case 'cancelled':
-      return [requested, { key: 'cancelled', label: 'Cancelled', at: null, state: 'failed', note: d.cancelReason }];
-    default:
-      return [requested];
-  }
+/** Display state: negative outcomes (declined, expired, cancelled, no-show) read as failed. */
+function stepState(step: ApiStep): StepState {
+  return NEGATIVE_STEP.test(step.key) ? 'failed' : step.state;
 }
 
-function serviceSteps(d: BookingDetail): Step[] {
-  const steps: Step[] = d.timeline.map((t, i) => ({
-    key: t.key ?? String(i),
-    label: t.label,
-    at: t.at,
-    state: (t.state as StepState) ?? 'pending',
-  }));
-  if (d.status === 'cancelled') {
-    steps.push({ key: 'cancelled', label: 'Cancelled', at: null, state: 'failed', note: d.cancelReason });
-  }
-  return steps;
+function byLabel(by: string | null | undefined) {
+  if (!by) return null;
+  if (by === 'system') return 'NOD Care';
+  return by.charAt(0).toUpperCase() + by.slice(1);
 }
 
-function Timeline({ steps }: { steps: Step[] }) {
+function stepTime(step: ApiStep, state: StepState) {
+  if (!step.at) return state === 'current' ? 'In progress' : null;
+  if (state === 'current' && step.key === 'awaiting') {
+    return `Respond by ${formatDateTime(step.at)} (${relativeFromNow(step.at)}), or the request expires`;
+  }
+  if (state === 'pending') return `Scheduled ${formatDateTime(step.at)}`;
+  const who = byLabel(step.by);
+  return `${formatDateTime(step.at)}${who ? ` · ${who}` : ''}`;
+}
+
+function Timeline({ d }: { d: BookingDetail }) {
+  const steps = [...d.timeline];
+  // Non-visit services do not record a cancellation step themselves.
+  if (!isAppointmentService(d.service) && d.status === 'cancelled' && !steps.some((s) => s.key.startsWith('cancelled'))) {
+    steps.push({ key: 'cancelled', label: 'Cancelled', at: null, state: 'done', note: d.cancelReason });
+  }
   return (
     <ol className="relative space-y-4" aria-label="Booking timeline">
-      {steps.map((step, i) => (
-        <li key={step.key} className="relative flex gap-3">
-          {i < steps.length - 1 ? (
-            <span className="absolute left-[4.5px] top-4 h-[calc(100%+4px)] w-px bg-[var(--line)]" aria-hidden />
-          ) : null}
-          <span className={`relative mt-1 size-2.5 shrink-0 rounded-full ${DOT[step.state]}`} aria-hidden />
-          <div className="min-w-0">
-            <div
-              className={`text-sm font-medium ${
-                step.state === 'failed'
-                  ? 'text-[#b42318]'
-                  : step.state === 'pending' || step.state === 'skipped'
-                    ? 'text-[var(--muted)]'
-                    : ''
-              }`}
-            >
-              {step.label}
+      {steps.map((step, i) => {
+        const state = stepState(step);
+        const time = stepTime(step, state);
+        return (
+          <li key={step.key} className="relative flex gap-3">
+            {i < steps.length - 1 ? (
+              <span className="absolute left-[4.5px] top-4 h-[calc(100%+4px)] w-px bg-[var(--line)]" aria-hidden />
+            ) : null}
+            <span className={`relative mt-1 size-2.5 shrink-0 rounded-full ${DOT[state]}`} aria-hidden />
+            <div className="min-w-0">
+              <div
+                className={`text-sm font-medium ${
+                  state === 'failed'
+                    ? 'text-[#b42318]'
+                    : state === 'pending' || state === 'skipped'
+                      ? 'text-[var(--muted)]'
+                      : ''
+                }`}
+              >
+                {step.label}
+              </div>
+              {time ? <div className="text-xs text-[var(--muted)]">{time}</div> : null}
+              {step.note ? <div className="mt-0.5 text-xs text-[var(--muted)]">{step.note}</div> : null}
             </div>
-            <div className="text-xs text-[var(--muted)]">
-              {step.at ? formatDateTime(step.at) : step.state === 'current' ? 'In progress' : null}
-            </div>
-            {step.note ? <div className="mt-0.5 text-xs text-[var(--muted)]">{step.note}</div> : null}
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -232,7 +177,7 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
 
   const d = detail.data;
   const appointment = d ? isAppointmentService(d.service) : false;
-  const mode = d ? paymentModeLabel(d.paymentMode ?? d.payment.mode) : null;
+  const mode = d ? paymentModeLabel(d.payment.mode ?? d.paymentMode) : null;
   const cancellable = d ? !isTerminalStatus(d.status) && can(user?.role, 'bookings') : false;
 
   return (
@@ -264,7 +209,7 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
             </div>
           ) : null}
 
-          <Timeline steps={appointment ? appointmentSteps(d) : serviceSteps(d)} />
+          <Timeline d={d} />
 
           <Card className="p-4!">
             <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] mb-1">Patient</div>
@@ -287,7 +232,15 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
             <DetailRow label="Payment status">
               <span className="capitalize">{paymentStatusLabel(d.payment.status)}</span>
             </DetailRow>
-            {mode ? <DetailRow label="Payment mode">{mode}</DetailRow> : null}
+            {mode ? (
+              <DetailRow label="Payment mode">
+                {mode}
+                {d.payment.channel ? (
+                  <div className="text-xs font-normal text-[var(--muted)]">via {d.payment.channel}</div>
+                ) : null}
+              </DetailRow>
+            ) : null}
+            {d.cancelledBy ? <DetailRow label="Cancelled by">{byLabel(d.cancelledBy)}</DetailRow> : null}
             {d.cancelReason ? <DetailRow label="Cancel reason">{d.cancelReason}</DetailRow> : null}
             {d.rejectReason ? <DetailRow label="Decline reason">{d.rejectReason}</DetailRow> : null}
           </Card>
