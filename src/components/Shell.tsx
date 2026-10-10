@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useAuth } from '../lib/auth';
 import {
   BrandLockup,
@@ -363,7 +364,10 @@ export function Shell() {
           </button>
         </header>
         <main className="px-8 pb-10">
-          <Outlet />
+          {/* Keyed by path so navigating away from a crashed page recovers. */}
+          <ErrorBoundary inline key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

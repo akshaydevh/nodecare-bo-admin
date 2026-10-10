@@ -8,8 +8,9 @@ import { Button, Card, ErrorText, Input } from '../components/ui';
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [loginId, setLoginId] = useState('root');
-  const [password, setPassword] = useState('123456');
+  // Dev convenience only: never ship prefilled credentials in production builds.
+  const [loginId, setLoginId] = useState(import.meta.env.DEV ? 'root' : '');
+  const [password, setPassword] = useState(import.meta.env.DEV ? '123456' : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
