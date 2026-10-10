@@ -14,7 +14,7 @@ import {
 } from '../../components/ui';
 import { apiRequest } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { formatDateTime, formatInr, relativeFromNow, relativeTime } from '../../lib/format';
+import { formatDateTime, formatInr, relativeFromNow } from '../../lib/format';
 import { can } from '../../lib/roles';
 import {
   bookingStatusLabel,
@@ -269,7 +269,7 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
           <Card className="p-4!">
             <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] mb-1">Patient</div>
             <div className="font-medium text-sm">{d.patientName}</div>
-            <div className="text-sm text-[var(--muted)]">{d.patientPhone ?? 'Phone hidden for your role'}</div>
+            <div className="text-sm text-[var(--muted)]">{d.patientPhone ?? 'No phone on file'}</div>
             {d.pickup ? <DetailRow label="Pickup">{d.pickup}</DetailRow> : null}
             {d.dropoff ? <DetailRow label="Drop-off">{d.dropoff}</DetailRow> : null}
             {d.collectionAddress ? <DetailRow label="Collection">{d.collectionAddress}</DetailRow> : null}
@@ -281,7 +281,7 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
             <DetailRow label="Provider">{d.providerName}</DetailRow>
             <DetailRow label={appointment ? 'Visit time' : 'Created'}>
               {formatDateTime(d.scheduledAt)}
-              <div className="text-xs font-normal text-[var(--muted)]">{relativeTime(d.scheduledAt)}</div>
+              <div className="text-xs font-normal text-[var(--muted)]">{relativeFromNow(d.scheduledAt)}</div>
             </DetailRow>
             <DetailRow label="Amount">{formatInr(d.payment.amount)}</DetailRow>
             <DetailRow label="Payment status">

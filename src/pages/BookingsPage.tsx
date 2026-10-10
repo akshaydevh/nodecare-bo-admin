@@ -17,7 +17,7 @@ import {
   Tabs,
 } from '../components/ui';
 import { apiDownloadCsv, apiRequest, qs } from '../lib/api';
-import { formatDateTime, formatInr, relativeTime } from '../lib/format';
+import { formatDateTime, formatInr, relativeFromNow } from '../lib/format';
 import { BookingDetailDrawer } from './bookings/BookingDetailDrawer';
 import {
   bookingStatusLabel,
@@ -197,7 +197,7 @@ export function BookingsPage() {
               <td className="px-4 py-3">{row.providerName}</td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <div>{formatDateTime(row.scheduledAt)}</div>
-                <div className="text-xs text-[var(--muted)]">{relativeTime(row.scheduledAt)}</div>
+                <div className="text-xs text-[var(--muted)]">{relativeFromNow(row.scheduledAt)}</div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <div>{formatInr(row.amount)}</div>
