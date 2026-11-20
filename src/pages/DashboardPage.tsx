@@ -36,7 +36,6 @@ const SERVICE_COLORS: Record<string, string> = {
   doctor: '#0e7a81',
   diagnostics: '#175cd3',
   pharmacy: '#dc6803',
-  ambulance: '#f04438',
   caretaker: '#7a5af8',
 };
 
@@ -152,7 +151,6 @@ function HeartbeatDivider() {
 
 function activityColor(resourceType: string) {
   const key = resourceType.toLowerCase();
-  if (key.includes('ambulance')) return '#f04438';
   if (key.includes('doctor')) return '#0e7a81';
   if (key.includes('diagnos') || key.includes('centre')) return '#175cd3';
   if (key.includes('pharma')) return '#dc6803';
@@ -174,7 +172,7 @@ function reviewPath(type: string) {
   if (key.includes('diagnos') || key.includes('lab') || key.includes('centre')) return '/centres';
   if (key.includes('pharmacy')) return '/providers/pharmacy';
   if (key.includes('caretaker')) return '/providers/caretaker';
-  return '/providers/ambulance';
+  return '/verification';
 }
 
 export function DashboardPage() {

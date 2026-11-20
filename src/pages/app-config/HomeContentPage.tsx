@@ -16,7 +16,6 @@ type Tab = 'carousel' | 'shortcuts' | 'featured';
 
 const SCREEN_OPTIONS = [
   { value: 'book_appointment', label: 'Book appointment' },
-  { value: 'ambulance', label: 'Ambulance' },
   { value: 'caretaker', label: 'Caretaker' },
   { value: 'diagnostics', label: 'Diagnostics' },
   { value: 'pharmacy', label: 'Pharmacy' },

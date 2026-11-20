@@ -1,4 +1,4 @@
-export type BookingService = 'doctor' | 'diagnostics' | 'pharmacy' | 'ambulance' | 'caretaker';
+export type BookingService = 'doctor' | 'diagnostics' | 'pharmacy' | 'caretaker';
 
 type StatusOption = { value: string; label: string };
 
@@ -31,15 +31,6 @@ const PHARMACY_STATUSES: StatusOption[] = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const AMBULANCE_STATUSES: StatusOption[] = [
-  { value: 'requested', label: 'Requested' },
-  { value: 'assigned', label: 'Assigned' },
-  { value: 'en_route', label: 'En route' },
-  { value: 'arrived', label: 'Arrived' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
 export function statusGroupsFor(service: BookingService | ''): { label: string; options: StatusOption[] }[] {
   switch (service) {
     case 'doctor':
@@ -49,14 +40,11 @@ export function statusGroupsFor(service: BookingService | ''): { label: string; 
       return [{ label: 'Diagnostics', options: LAB_STATUSES }];
     case 'pharmacy':
       return [{ label: 'Pharmacy', options: PHARMACY_STATUSES }];
-    case 'ambulance':
-      return [{ label: 'Ambulance', options: AMBULANCE_STATUSES }];
     default:
       return [
         { label: 'Doctor & caretaker visits', options: APPOINTMENT_STATUSES },
         { label: 'Diagnostics', options: LAB_STATUSES },
         { label: 'Pharmacy', options: PHARMACY_STATUSES },
-        { label: 'Ambulance', options: AMBULANCE_STATUSES },
       ];
   }
 }

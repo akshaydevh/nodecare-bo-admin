@@ -52,8 +52,6 @@ export type BookingDetail = {
   paymentStatus: string;
   patientPhone: string | null;
   notes?: string | null;
-  pickup?: string | null;
-  dropoff?: string | null;
   collectionAddress?: string | null;
   deliveryAddress?: string | null;
   items?: { name?: string; quantity?: number; price?: number }[];
@@ -223,8 +221,6 @@ export function BookingDetailDrawer({ bookingId, onClose }: { bookingId: string 
             <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] mb-1">Patient</div>
             <div className="font-medium text-sm">{d.patientName}</div>
             <div className="text-sm text-[var(--muted)]">{d.patientPhone ?? 'No phone on file'}</div>
-            {d.pickup ? <DetailRow label="Pickup">{d.pickup}</DetailRow> : null}
-            {d.dropoff ? <DetailRow label="Drop-off">{d.dropoff}</DetailRow> : null}
             {d.collectionAddress ? <DetailRow label="Collection">{d.collectionAddress}</DetailRow> : null}
             {d.deliveryAddress ? <DetailRow label="Delivery">{d.deliveryAddress}</DetailRow> : null}
             {d.notes ? <DetailRow label="Notes">{d.notes}</DetailRow> : null}

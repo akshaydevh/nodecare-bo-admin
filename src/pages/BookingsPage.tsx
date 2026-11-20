@@ -87,7 +87,7 @@ export function BookingsPage() {
       <PageHeader
         eyebrow="Operations / Bookings"
         title="Bookings"
-        subtitle="Every booking across doctor, diagnostic, pharmacy, ambulance and caretaker services. Visits start as requests and wait for the provider to accept."
+        subtitle="Every booking across doctor, diagnostic, pharmacy and caretaker services. Visits start as requests and wait for the provider to accept."
         action={
           canExport ? (
             <Button
@@ -125,7 +125,6 @@ export function BookingsPage() {
             { id: 'doctor', label: 'Doctor' },
             { id: 'diagnostics', label: 'Diagnostics' },
             { id: 'pharmacy', label: 'Pharmacy' },
-            { id: 'ambulance', label: 'Ambulance' },
             { id: 'caretaker', label: 'Caretaker' },
           ]}
         />

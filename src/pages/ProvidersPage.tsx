@@ -14,13 +14,12 @@ import {
   PageHeader,
   Pagination,
   Select,
-  StatusDot,
   StatusPill,
   Table,
   Textarea,
 } from '../components/ui';
 
-type ProviderKind = 'ambulance' | 'pharmacy' | 'caretaker';
+type ProviderKind = 'pharmacy' | 'caretaker';
 type GeoPoint = { type: 'Point'; coordinates: [number, number] };
 
 type ProviderRow = {
@@ -32,36 +31,9 @@ type ProviderRow = {
   phone?: string | null;
   verificationStatus: string;
   status?: string;
-  fleetId?: string;
-  vehicleNumber?: string;
-  type?: string;
-  driverName?: string | null;
-  zone?: string | null;
-  liveStatus?: string;
   licenseNumber?: string | null;
   services?: string[];
   hourlyRate?: number;
-};
-
-type AmbulanceDetail = {
-  id: string;
-  name: string;
-  initials: string;
-  fleetId: string;
-  vehicleNumber: string;
-  type: string;
-  ambulanceType: string;
-  driverName: string | null;
-  phone: string | null;
-  zone: string | null;
-  city: string | null;
-  photoUrl: string | null;
-  location: GeoPoint | null;
-  liveStatus: string;
-  isActive: boolean;
-  verificationStatus: string;
-  createdAt: string;
-  updatedAt: string;
 };
 
 type PharmacyDetail = {
@@ -108,23 +80,8 @@ type CaretakerDetail = {
   updatedAt: string;
 };
 
-type ProviderDetail = AmbulanceDetail | PharmacyDetail | CaretakerDetail;
+type ProviderDetail = PharmacyDetail | CaretakerDetail;
 type Page = { items: ProviderRow[]; total: number; page: number; totalPages: number; limit: number };
-
-type AmbulanceForm = {
-  name: string;
-  vehicleNumber: string;
-  ambulanceType: string;
-  driverName: string;
-  phone: string;
-  zone: string;
-  city: string;
-  photoUrl: string;
-  lat: string;
-  lng: string;
-  isActive: boolean;
-  verificationStatus: string;
-};
 
 type PharmacyForm = {
   name: string;
@@ -162,23 +119,6 @@ type CaretakerForm = {
   isActive: boolean;
   verificationStatus: string;
 };
-
-function emptyAmbulance(): AmbulanceForm {
-  return {
-    name: '',
-    vehicleNumber: '',
-    ambulanceType: 'basic',
-    driverName: '',
-    phone: '',
-    zone: '',
-    city: 'New Delhi',
-    photoUrl: '',
-    lat: '',
-    lng: '',
-    isActive: false,
-    verificationStatus: 'pending',
-  };
-}
 
 function emptyPharmacy(): PharmacyForm {
   return {
@@ -255,21 +195,13 @@ function initialsFromName(name: string) {
 }
 
 function noun(type: ProviderKind) {
-  if (type === 'ambulance') return 'ambulance';
-  if (type === 'pharmacy') return 'pharmacy';
-  return 'caretaker';
+  return type === 'pharmacy' ? 'pharmacy' : 'caretaker';
 }
 
 const KIND_META: Record<
   ProviderKind,
   { title: string; subtitle: string; add: string; plural: string }
 > = {
-  ambulance: {
-    title: 'Ambulances',
-    subtitle: 'Fleet vehicles available for on-demand emergency booking.',
-    add: '+ Add ambulance',
-    plural: 'ambulances',
-  },
   pharmacy: {
     title: 'Pharmacies',
     subtitle: 'Partner pharmacies available for on-demand medicine orders.',
@@ -285,26 +217,8 @@ const KIND_META: Record<
 };
 
 function parseKind(value: string | undefined): ProviderKind | null {
-  if (value === 'ambulance' || value === 'pharmacy' || value === 'caretaker') return value;
+  if (value === 'pharmacy' || value === 'caretaker') return value;
   return null;
-}
-
-function toAmbulanceForm(d: AmbulanceDetail): AmbulanceForm {
-  const { lat, lng } = coords(d.location);
-  return {
-    name: d.name,
-    vehicleNumber: d.vehicleNumber,
-    ambulanceType: d.ambulanceType || d.type,
-    driverName: d.driverName ?? '',
-    phone: d.phone ?? '',
-    zone: d.zone ?? '',
-    city: d.city ?? '',
-    photoUrl: d.photoUrl ?? '',
-    lat,
-    lng,
-    isActive: d.isActive,
-    verificationStatus: d.verificationStatus,
-  };
 }
 
 function toPharmacyForm(d: PharmacyDetail): PharmacyForm {
@@ -347,22 +261,6 @@ function toCaretakerForm(d: CaretakerDetail): CaretakerForm {
     lng,
     isActive: d.isActive,
     verificationStatus: d.verificationStatus,
-  };
-}
-
-function ambulancePayload(values: AmbulanceForm) {
-  return {
-    name: values.name,
-    vehicleNumber: values.vehicleNumber,
-    ambulanceType: values.ambulanceType,
-    driverName: values.driverName || undefined,
-    phone: values.phone || undefined,
-    zone: values.zone || undefined,
-    city: values.city || undefined,
-    photoUrl: values.photoUrl.startsWith('http') ? values.photoUrl : undefined,
-    location: locationPayload(values.lat, values.lng),
-    isActive: values.isActive,
-    verificationStatus: values.verificationStatus,
   };
 }
 
@@ -491,12 +389,10 @@ export function ProvidersPage() {
   const [page, setPage] = useState(1);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [error, setError] = useState('');
-  const [ambulance, setAmbulance] = useState(emptyAmbulance);
   const [pharmacy, setPharmacy] = useState(emptyPharmacy);
   const [caretaker, setCaretaker] = useState(emptyCaretaker);
   const [viewId, setViewId] = useState<string | null>(null);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
-  const [editAmbulance, setEditAmbulance] = useState<AmbulanceForm | null>(null);
   const [editPharmacy, setEditPharmacy] = useState<PharmacyForm | null>(null);
   const [editCaretaker, setEditCaretaker] = useState<CaretakerForm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -509,7 +405,7 @@ export function ProvidersPage() {
   const summary = useQuery({
     queryKey: ['ops-summary'],
     queryFn: () =>
-      apiRequest<{ providers: { ambulance: number; pharmacy: number; caretaker: number } }>(
+      apiRequest<{ providers: { pharmacy: number; caretaker: number } }>(
         '/admin/ops/summary',
       ),
   });
@@ -529,20 +425,13 @@ export function ProvidersPage() {
 
   useEffect(() => {
     if (mode !== 'edit' || !detail.data) return;
-    if (type === 'ambulance' && !editAmbulance) setEditAmbulance(toAmbulanceForm(detail.data as AmbulanceDetail));
     if (type === 'pharmacy' && !editPharmacy) setEditPharmacy(toPharmacyForm(detail.data as PharmacyDetail));
     if (type === 'caretaker' && !editCaretaker) setEditCaretaker(toCaretakerForm(detail.data as CaretakerDetail));
-  }, [mode, detail.data, type, editAmbulance, editPharmacy, editCaretaker]);
+  }, [mode, detail.data, type, editPharmacy, editCaretaker]);
 
   const create = useMutation({
     mutationFn: () => {
       if (!type) throw new Error('Invalid provider type');
-      if (type === 'ambulance') {
-        return apiRequest('/admin/network/providers/ambulance', {
-          method: 'POST',
-          body: JSON.stringify(ambulancePayload(ambulance)),
-        });
-      }
       if (type === 'pharmacy') {
         return apiRequest('/admin/network/providers/pharmacy', {
           method: 'POST',
@@ -567,11 +456,9 @@ export function ProvidersPage() {
     mutationFn: () => {
       if (!type || !viewId) throw new Error('Nothing to save');
       const body =
-        type === 'ambulance'
-          ? editAmbulance && ambulancePayload(editAmbulance)
-          : type === 'pharmacy'
-            ? editPharmacy && pharmacyPayload(editPharmacy)
-            : editCaretaker && caretakerPayload(editCaretaker);
+        type === 'pharmacy'
+          ? editPharmacy && pharmacyPayload(editPharmacy)
+          : editCaretaker && caretakerPayload(editCaretaker);
       if (!body) throw new Error('Nothing to save');
       return apiRequest<ProviderDetail>(`/admin/network/providers/${type}/${viewId}`, {
         method: 'PATCH',
@@ -634,12 +521,10 @@ export function ProvidersPage() {
       const url =
         result.kind === 'register' ? result.data.publicUrl : (result.data.photoUrl ?? '');
       if (result.kind === 'register') {
-        if (type === 'ambulance') setAmbulance((current) => ({ ...current, photoUrl: url }));
         if (type === 'pharmacy') setPharmacy((current) => ({ ...current, photoUrl: url }));
         if (type === 'caretaker') setCaretaker((current) => ({ ...current, photoUrl: url }));
         return;
       }
-      if (type === 'ambulance') setEditAmbulance((current) => (current ? { ...current, photoUrl: url } : current));
       if (type === 'pharmacy') setEditPharmacy((current) => (current ? { ...current, photoUrl: url } : current));
       if (type === 'caretaker') setEditCaretaker((current) => (current ? { ...current, photoUrl: url } : current));
       qc.setQueryData(['network-provider', type, viewId], result.data);
@@ -652,7 +537,6 @@ export function ProvidersPage() {
   });
 
   function resetRegister() {
-    setAmbulance(emptyAmbulance());
     setPharmacy(emptyPharmacy());
     setCaretaker(emptyCaretaker());
     setError('');
@@ -670,7 +554,6 @@ export function ProvidersPage() {
   function closeDetail() {
     setViewId(null);
     setMode('view');
-    setEditAmbulance(null);
     setEditPharmacy(null);
     setEditCaretaker(null);
     setConfirmDelete(false);
@@ -705,13 +588,11 @@ export function ProvidersPage() {
     setStatus('');
     setPage(1);
     setRegisterOpen(false);
-    setAmbulance(emptyAmbulance());
     setPharmacy(emptyPharmacy());
     setCaretaker(emptyCaretaker());
     setError('');
     setViewId(null);
     setMode('view');
-    setEditAmbulance(null);
     setEditPharmacy(null);
     setEditCaretaker(null);
     setConfirmDelete(false);
@@ -722,7 +603,7 @@ export function ProvidersPage() {
   const data = list.data;
   const provider = detail.data;
 
-  if (!type) return <Navigate to="/providers/ambulance" replace />;
+  if (!type) return <Navigate to="/providers/pharmacy" replace />;
 
   const meta = KIND_META[type];
 
@@ -768,47 +649,7 @@ export function ProvidersPage() {
         </Select>
       </div>
 
-      {type === 'ambulance' ? (
-        <Table headers={['Provider', 'Vehicle no.', 'Type', 'Driver', 'Zone', 'Live', 'Status', '']}>
-          {(data?.items ?? []).map((row) => (
-            <tr key={row.id} className="hover:bg-[#f8fafb]">
-              <td className="px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <Avatar initials={row.initials} src={row.photoUrl} className="size-9 text-xs" />
-                  <div>
-                    <div className="font-semibold text-[var(--ink)]">{row.name}</div>
-                    <div className="text-xs text-[var(--muted)]">Fleet ID {row.fleetId}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3.5">{row.vehicleNumber}</td>
-              <td className="px-4 py-3.5 capitalize">{row.type}</td>
-              <td className="px-4 py-3.5">{row.driverName || '—'}</td>
-              <td className="px-4 py-3.5">{row.zone || '—'}</td>
-              <td className="px-4 py-3.5">
-                <StatusDot status={(row.liveStatus ?? '').replace('_', ' ')} />
-              </td>
-              <td className="px-4 py-3.5">
-                <StatusPill status={row.verificationStatus} />
-              </td>
-              <td className="px-4 py-3.5 text-right">
-                <button
-                  type="button"
-                  className="text-sm font-medium text-[var(--brand)] hover:underline"
-                  onClick={() => {
-                    setMode('view');
-                    setConfirmDelete(false);
-                    setDetailError('');
-                    setViewId(row.id);
-                  }}
-                >
-                  View
-                </button>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      ) : type === 'pharmacy' ? (
+      {type === 'pharmacy' ? (
         <Table headers={['Provider', 'City', 'License', 'Phone', 'Status', '']}>
           {(data?.items ?? []).map((row) => (
             <tr key={row.id} className="hover:bg-[#f8fafb]">
@@ -894,66 +735,6 @@ export function ProvidersPage() {
             create.mutate();
           }}
         >
-          {type === 'ambulance' ? (
-            <>
-              <PhotoField
-                initials={initialsFromName(ambulance.name)}
-                photoUrl={ambulance.photoUrl}
-                fileRef={registerFileRef}
-                onPickPhoto={(e) => onPickPhoto('register', e)}
-              />
-              <FormField label="Fleet name">
-                <Input value={ambulance.name} onChange={(e) => setAmbulance({ ...ambulance, name: e.target.value })} required />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Vehicle number">
-                  <Input
-                    value={ambulance.vehicleNumber}
-                    onChange={(e) => setAmbulance({ ...ambulance, vehicleNumber: e.target.value })}
-                    required
-                  />
-                </FormField>
-                <FormField label="Type">
-                  <Select
-                    value={ambulance.ambulanceType}
-                    onChange={(e) => setAmbulance({ ...ambulance, ambulanceType: e.target.value })}
-                  >
-                    <option value="basic">Basic</option>
-                    <option value="advanced">ICU / Advanced</option>
-                    <option value="air">Air</option>
-                  </Select>
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Driver name">
-                  <Input value={ambulance.driverName} onChange={(e) => setAmbulance({ ...ambulance, driverName: e.target.value })} />
-                </FormField>
-                <FormField label="Driver phone">
-                  <Input value={ambulance.phone} onChange={(e) => setAmbulance({ ...ambulance, phone: e.target.value })} />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Zone">
-                  <Input value={ambulance.zone} onChange={(e) => setAmbulance({ ...ambulance, zone: e.target.value })} />
-                </FormField>
-                <FormField label="City">
-                  <Input value={ambulance.city} onChange={(e) => setAmbulance({ ...ambulance, city: e.target.value })} />
-                </FormField>
-              </div>
-              <FormField label="Base location">
-                <LocationPicker
-                  lat={ambulance.lat}
-                  lng={ambulance.lng}
-                  onChange={(lat, lng) => setAmbulance({ ...ambulance, lat, lng })}
-                />
-              </FormField>
-              <StatusFields
-                verificationStatus={ambulance.verificationStatus}
-                isActive={ambulance.isActive}
-                onChange={(patch) => setAmbulance({ ...ambulance, ...patch })}
-              />
-            </>
-          ) : null}
           {type === 'pharmacy' ? (
             <>
               <PhotoField
@@ -1112,19 +893,6 @@ export function ProvidersPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {type === 'ambulance' ? (
-                <>
-                  <Field label="Fleet ID" value={(provider as AmbulanceDetail).fleetId} />
-                  <Field label="Vehicle no." value={(provider as AmbulanceDetail).vehicleNumber} />
-                  <Field label="Type" value={(provider as AmbulanceDetail).ambulanceType} />
-                  <Field label="Driver" value={(provider as AmbulanceDetail).driverName} />
-                  <Field label="Phone" value={(provider as AmbulanceDetail).phone} />
-                  <Field label="Zone" value={(provider as AmbulanceDetail).zone} />
-                  <Field label="City" value={(provider as AmbulanceDetail).city} />
-                  <Field label="Live status" value={(provider as AmbulanceDetail).liveStatus?.replace('_', ' ')} />
-                  <Field label="Location" value={formatCoords((provider as AmbulanceDetail).location)} />
-                </>
-              ) : null}
               {type === 'pharmacy' ? (
                 <>
                   <Field label="Slug" value={(provider as PharmacyDetail).slug} />
@@ -1186,7 +954,6 @@ export function ProvidersPage() {
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button
                   onClick={() => {
-                    if (type === 'ambulance') setEditAmbulance(toAmbulanceForm(provider as AmbulanceDetail));
                     if (type === 'pharmacy') setEditPharmacy(toPharmacyForm(provider as PharmacyDetail));
                     if (type === 'caretaker') setEditCaretaker(toCaretakerForm(provider as CaretakerDetail));
                     setMode('edit');
@@ -1218,82 +985,6 @@ export function ProvidersPage() {
               update.mutate();
             }}
           >
-            {type === 'ambulance' && editAmbulance ? (
-              <>
-                <PhotoField
-                  initials={provider.initials}
-                  photoUrl={editAmbulance.photoUrl}
-                  fileRef={fileRef}
-                  onPickPhoto={(e) => onPickPhoto('edit', e)}
-                />
-                <FormField label="Fleet name">
-                  <Input
-                    value={editAmbulance.name}
-                    onChange={(e) => setEditAmbulance({ ...editAmbulance, name: e.target.value })}
-                    required
-                  />
-                </FormField>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Vehicle number">
-                    <Input
-                      value={editAmbulance.vehicleNumber}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, vehicleNumber: e.target.value })}
-                      required
-                    />
-                  </FormField>
-                  <FormField label="Type">
-                    <Select
-                      value={editAmbulance.ambulanceType}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, ambulanceType: e.target.value })}
-                    >
-                      <option value="basic">Basic</option>
-                      <option value="advanced">ICU / Advanced</option>
-                      <option value="air">Air</option>
-                    </Select>
-                  </FormField>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Driver name">
-                    <Input
-                      value={editAmbulance.driverName}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, driverName: e.target.value })}
-                    />
-                  </FormField>
-                  <FormField label="Driver phone">
-                    <Input
-                      value={editAmbulance.phone}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, phone: e.target.value })}
-                    />
-                  </FormField>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Zone">
-                    <Input
-                      value={editAmbulance.zone}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, zone: e.target.value })}
-                    />
-                  </FormField>
-                  <FormField label="City">
-                    <Input
-                      value={editAmbulance.city}
-                      onChange={(e) => setEditAmbulance({ ...editAmbulance, city: e.target.value })}
-                    />
-                  </FormField>
-                </div>
-                <FormField label="Base location">
-                  <LocationPicker
-                    lat={editAmbulance.lat}
-                    lng={editAmbulance.lng}
-                    onChange={(lat, lng) => setEditAmbulance({ ...editAmbulance, lat, lng })}
-                  />
-                </FormField>
-                <StatusFields
-                  verificationStatus={editAmbulance.verificationStatus}
-                  isActive={editAmbulance.isActive}
-                  onChange={(patch) => setEditAmbulance({ ...editAmbulance, ...patch })}
-                />
-              </>
-            ) : null}
             {type === 'pharmacy' && editPharmacy ? (
               <>
                 <PhotoField

@@ -221,18 +221,6 @@ export function IconChevron({ className }: IconProps) {
   );
 }
 
-export function IconAmbulance({ className }: IconProps) {
-  return (
-    <Icon className={className}>
-      <path d="M3 11h10v7H3z" />
-      <path d="M13 13h3.5L19 16v2h-6" />
-      <circle cx="6.5" cy="18.5" r="1.5" />
-      <circle cx="16.5" cy="18.5" r="1.5" />
-      <path d="M8 6.5v4M6 8.5h4" />
-    </Icon>
-  );
-}
-
 export function IconPharmacy({ className }: IconProps) {
   return (
     <Icon className={className}>

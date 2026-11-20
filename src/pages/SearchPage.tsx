@@ -17,7 +17,6 @@ const LINKS: Record<string, string> = {
   clinic: '/medical-centres',
   hospital: '/medical-centres',
   centre: '/centres',
-  ambulance: '/providers/ambulance',
   pharmacy: '/providers/pharmacy',
   caretaker: '/providers/caretaker',
   booking: '/bookings',

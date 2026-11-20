@@ -12,7 +12,7 @@ type Sales = {
     refundsIssued: { value: number; changePct: number };
     netProviderPayout: { value: number; changePct: number };
   };
-  stacked: { month: string; doctor: number; diagnostics: number; pharmacy: number; ambulance: number; caretaker: number }[];
+  stacked: { month: string; doctor: number; diagnostics: number; pharmacy: number; caretaker: number }[];
   share: { service: string; total: number }[];
   topDoctors: { id: string | null; name: string; bookings: number; revenue: number }[];
 };
@@ -21,23 +21,21 @@ type Overview = {
   appointmentsByStatus: Record<string, number>;
   labBookingsByStatus: Record<string, number>;
   pharmacyOrdersByStatus: Record<string, number>;
-  ambulanceByStatus: Record<string, number>;
 };
 
 const COLORS: Record<string, string> = {
   doctor: '#0f6b63',
   diagnostics: '#175cd3',
   pharmacy: '#dc6803',
-  ambulance: '#f04438',
   caretaker: '#7a5af8',
 };
 
 function StackedBars({ rows }: { rows: Sales['stacked'] }) {
   const max = Math.max(
-    ...rows.map((r) => r.doctor + r.diagnostics + r.pharmacy + r.ambulance + r.caretaker),
+    ...rows.map((r) => r.doctor + r.diagnostics + r.pharmacy + r.caretaker),
     1,
   );
-  const keys = ['doctor', 'diagnostics', 'pharmacy', 'ambulance', 'caretaker'] as const;
+  const keys = ['doctor', 'diagnostics', 'pharmacy', 'caretaker'] as const;
   return (
     <div className="flex items-end gap-3 h-48">
       {rows.map((row) => (
@@ -235,7 +233,6 @@ export function ReportsPage() {
             <StatusCard title="Appointments" data={analytics.data?.appointmentsByStatus} />
             <StatusCard title="Lab bookings" data={analytics.data?.labBookingsByStatus} />
             <StatusCard title="Pharmacy orders" data={analytics.data?.pharmacyOrdersByStatus} />
-            <StatusCard title="Ambulance" data={analytics.data?.ambulanceByStatus} />
           </div>
         </>
       )}

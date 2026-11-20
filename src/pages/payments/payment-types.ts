@@ -1,7 +1,7 @@
 export type Payment = {
   id: string;
   receipt: string;
-  resourceType: 'appointment' | 'lab_booking' | 'pharmacy_order' | 'ambulance_booking';
+  resourceType: 'appointment' | 'lab_booking' | 'pharmacy_order';
   resourceId: string;
   /** Booking / order ID of what was paid for. */
   reference: string | null;
@@ -43,7 +43,6 @@ export const RESOURCE_LABEL: Record<Payment['resourceType'], string> = {
   appointment: 'Doctor / caretaker visit',
   lab_booking: 'Lab test',
   pharmacy_order: 'Medicines',
-  ambulance_booking: 'Ambulance',
 };
 
 export const PAYMENT_STATUS_LABEL: Record<Payment['status'], string> = {

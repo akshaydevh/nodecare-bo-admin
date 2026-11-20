@@ -18,7 +18,7 @@ import { apiRequest, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { can } from '../lib/roles';
 
-type Kind = 'doctor' | 'clinic' | 'hospital' | 'diagnostics' | 'caretaker' | 'pharmacy' | 'ambulance';
+type Kind = 'doctor' | 'clinic' | 'hospital' | 'diagnostics' | 'caretaker' | 'pharmacy';
 
 type Source = {
   kind: Kind;
@@ -79,14 +79,6 @@ const SOURCES: Source[] = [
     verify: (id) => `/admin/network/providers/pharmacy/${id}/verification`,
     manage: '/providers/pharmacy',
   },
-  {
-    kind: 'ambulance',
-    label: 'Ambulances',
-    singular: 'Ambulance',
-    list: `/admin/network/providers${qs({ type: 'ambulance' })}`,
-    verify: (id) => `/admin/network/providers/ambulance/${id}/verification`,
-    manage: '/providers/ambulance',
-  },
 ];
 
 type Row = {
@@ -112,11 +104,9 @@ function toRow(source: Source, item: Record<string, unknown>): Row {
           str(item.registrationNumber) && `Reg. ${str(item.registrationNumber)}`,
           str(item.city),
         ]
-      : source.kind === 'ambulance'
-        ? [str(item.vehicleNumber), str(item.driverName), str(item.city)]
-        : source.kind === 'pharmacy' || source.kind === 'diagnostics'
-          ? [str(item.licenseNumber) && `Licence ${str(item.licenseNumber)}`, str(item.city)]
-          : [str(item.city)];
+      : source.kind === 'pharmacy' || source.kind === 'diagnostics'
+        ? [str(item.licenseNumber) && `Licence ${str(item.licenseNumber)}`, str(item.city)]
+        : [str(item.city)];
   return {
     id: str(item.id),
     kind: source.kind,

@@ -16,7 +16,6 @@ type Settings = {
     doctor: number;
     diagnostics: number;
     pharmacy: number;
-    ambulance: number;
     caretaker: number;
   };
 };
@@ -74,7 +73,6 @@ export function SettingsPage() {
     ['doctor', 'Doctor consultation'],
     ['diagnostics', 'Diagnostic services'],
     ['pharmacy', 'Pharmacy orders'],
-    ['ambulance', 'Ambulance booking'],
     ['caretaker', 'Caretaker services'],
   ] as const;
 

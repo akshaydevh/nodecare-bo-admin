@@ -60,7 +60,7 @@ export default function App() {
                 <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="medical-centres" element={<MedicalCentresPage />} />
                 <Route path="centres" element={<CentresPage />} />
-                <Route path="providers" element={<Navigate to="/providers/ambulance" replace />} />
+                <Route path="providers" element={<Navigate to="/providers/pharmacy" replace />} />
                 <Route path="providers/:type" element={<ProvidersPage />} />
                 <Route path="verification" element={<VerificationPage />} />
                 <Route path="availability" element={<AvailabilityPage />} />

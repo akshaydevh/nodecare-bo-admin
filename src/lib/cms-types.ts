@@ -1,6 +1,6 @@
 export type CmsDestination =
   | { type: 'none' }
-  | { type: 'screen'; value: 'book_appointment' | 'ambulance' | 'caretaker' | 'diagnostics' | 'pharmacy' }
+  | { type: 'screen'; value: 'book_appointment' | 'caretaker' | 'diagnostics' | 'pharmacy' }
   | { type: 'doctor'; id: string }
   | { type: 'speciality'; id: string }
   | { type: 'lab_package'; id: string }
