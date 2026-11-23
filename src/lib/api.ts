@@ -276,6 +276,29 @@ export async function apiDownloadCsv(path: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Open a long-lived response (the realtime stream) with the signed-in
+ * account's token, refreshing the token once if it has expired. The caller
+ * reads the body itself, so nothing is parsed here.
+ */
+export async function apiOpenStream(path: string, signal: AbortSignal): Promise<Response> {
+  if (API_CONFIG_ERROR) throw new ApiError(0, 'CONFIG_ERROR', API_CONFIG_ERROR);
+  const run = () => {
+    const headers = new Headers({ Accept: 'text/event-stream' });
+    const { accessToken } = getStoredTokens();
+    if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+    return fetch(`${API_BASE}${path}`, { headers, signal, cache: 'no-store' });
+  };
+
+  let res = await run();
+  if (res.status === 401) {
+    void res.body?.cancel();
+    const recovered = await recoverOrExpire(path, true, new ApiError(401, 'UNAUTHORIZED', 'Invalid or expired token'));
+    if (recovered) res = await run();
+  }
+  return res;
+}
+
 export function qs(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {

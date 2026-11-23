@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useAuth } from '../lib/auth';
+import { useRealtime } from '../lib/realtime';
 import {
   BrandLockup,
   IconApps,
@@ -297,10 +298,22 @@ export function Shell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [q, setQ] = useState('');
+  const queryClient = useQueryClient();
+  // The backend says when a count changes; polling is only the fallback, so it slows down while live.
+  const live = useRealtime(
+    useCallback(
+      (hint) => {
+        if (hint === 'ops.updated' || hint === 'resync') {
+          void queryClient.invalidateQueries({ queryKey: ['ops-summary'] });
+        }
+      },
+      [queryClient],
+    ),
+  );
   const summary = useQuery({
     queryKey: ['ops-summary'],
     queryFn: () => apiRequest<Summary>('/admin/ops/summary'),
-    refetchInterval: 30_000,
+    refetchInterval: live ? 5 * 60_000 : 30_000,
   });
 
   function onSearch(e: React.FormEvent) {
