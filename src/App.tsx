@@ -12,6 +12,7 @@ import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DeletionRequestsPage } from './pages/DeletionRequestsPage';
 import { DoctorsPage } from './pages/DoctorsPage';
+import { FailedTasksPage } from './pages/FailedTasksPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { PatientsPage } from './pages/PatientsPage';
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="deletion-requests" element={<DeletionRequestsPage />} />
                 <Route path="payments" element={<PaymentsPage />} />
                 <Route path="coupons" element={<CouponsPage />} />
+                <Route path="failed-tasks" element={<FailedTasksPage />} />
                 <Route path="broadcast" element={<BroadcastPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="reports/analytics" element={<ReportsPage />} />

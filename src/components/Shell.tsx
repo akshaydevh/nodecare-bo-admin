@@ -2,12 +2,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { apiRequest } from '../lib/api';
+import { apiRequest, apiRequestWithMeta } from '../lib/api';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useAuth } from '../lib/auth';
 import { useRealtime } from '../lib/realtime';
+import { can } from '../lib/roles';
 import {
   BrandLockup,
+  IconAlert,
   IconApps,
   IconBadgeCheck,
   IconBarChart,
@@ -47,6 +49,8 @@ type Summary = {
   deletionRequests?: number;
   pendingVerifications?: number;
   openSupportTickets?: number;
+  /** Background work that has stopped retrying. Fetched separately: only finance roles may read it. */
+  failedTasks?: number;
   providers?: ProviderCounts;
 };
 
@@ -120,6 +124,13 @@ const nav: {
     items: [
       { to: '/payments', label: 'Payments', icon: <IconCard className="size-4" /> },
       { to: '/coupons', label: 'Coupons', icon: <IconTag className="size-4" /> },
+      {
+        to: '/failed-tasks',
+        label: 'Failed tasks',
+        countKey: 'failedTasks',
+        alert: true,
+        icon: <IconAlert className="size-4" />,
+      },
     ],
   },
   {
@@ -316,6 +327,16 @@ export function Shell() {
     refetchInterval: live ? 5 * 60_000 : 30_000,
   });
 
+  // Refunds and notifications that have stopped retrying. Not part of the summary above, which every role can read.
+  const failedTasks = useQuery({
+    queryKey: ['failed-tasks', 'count'],
+    queryFn: () =>
+      apiRequestWithMeta<unknown[], { dead?: number }>('/admin/event-deliveries?status=dead&limit=1'),
+    select: (result) => result.meta.dead ?? 0,
+    enabled: can(user?.role, 'finance'),
+    refetchInterval: 2 * 60_000,
+  });
+
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     const query = q.trim();
@@ -323,7 +344,7 @@ export function Shell() {
     navigate(`/search?q=${encodeURIComponent(query)}`);
   }
 
-  const counts = summary.data;
+  const counts = summary.data ? { ...summary.data, failedTasks: failedTasks.data } : undefined;
 
   return (
     <div className="min-h-screen grid grid-cols-[260px_1fr] bg-[var(--surface)]">
